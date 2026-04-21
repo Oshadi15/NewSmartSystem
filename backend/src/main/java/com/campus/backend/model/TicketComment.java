@@ -12,8 +12,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TicketComment {
-    private String id; // auto-generated uuid in logic
+    private String id;
     private String authorId;
     private String content;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
