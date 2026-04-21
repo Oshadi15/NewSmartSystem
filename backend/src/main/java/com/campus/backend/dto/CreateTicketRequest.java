@@ -11,8 +11,7 @@ import java.util.List;
 @Data
 public class CreateTicketRequest {
 
-    // Reporter ID from request for now, usually from Auth context
-    @NotBlank(message = "Reporter ID is required")
+    // Set by controller from authenticated/request header context
     private String reporterId;
 
     @NotBlank(message = "Resource ID is required")
