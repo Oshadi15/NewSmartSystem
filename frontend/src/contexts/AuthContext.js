@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { authStorage } from '../services/authStorage';
-import api from '../services/api';
+import { apiService as api } from '../services/api';
 
 /**
  * AuthContext — provides login/logout state to the whole app.
