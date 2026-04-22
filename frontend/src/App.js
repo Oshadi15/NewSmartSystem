@@ -1,5 +1,5 @@
 import './App.css';
-import Tickets from './pages/Tickets';
+import Tickets from './pages/Tickets.js';
 
 function App() {
   const isTicketsPage = window.location.pathname === '/tickets';
