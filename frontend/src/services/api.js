@@ -27,6 +27,8 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+
+
 export const apiService = {
     getResources: () => api.get('/resources'),
     createTicket: (data) => api.post('/tickets', data),
@@ -49,4 +51,11 @@ export const apiService = {
             headers: { 'Content-Type': 'multipart/form-data' },
         });
     },
+    // ── Bookings ───────────────────────────────────────────────────────────────
+  createBooking:  (data)              => api.post('/bookings', data),
+  getUserBookings:(userId)            => api.get(`/bookings/user/${userId}`),
+  getAllBookings:  (status, resourceId)=> api.get('/bookings', { params: { ...(status && { status }), ...(resourceId && { resourceId }) } }),
+  approveBooking: (id)                => api.put(`/bookings/${id}/approve`),
+  rejectBooking:  (id, reason)        => api.put(`/bookings/${id}/reject`, null, { params: { reason } }),
+  cancelBooking:  (id)                => api.put(`/bookings/${id}/cancel`),
 };
