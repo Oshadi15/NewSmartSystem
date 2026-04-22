@@ -1,21 +1,21 @@
-import logo from './logo.svg';
 import './App.css';
+import Tickets from './pages/Tickets';
 
 function App() {
+  const isTicketsPage = window.location.pathname === '/tickets';
+
+  if (isTicketsPage) {
+    return <Tickets />;
+  }
+
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
         <p>
-          Edit <code>src/App.js</code> and save to reload.
+          Smart Campus frontend is running.
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
+        <a className="App-link" href="/tickets">
+          Open Tickets Page
         </a>
       </header>
     </div>
