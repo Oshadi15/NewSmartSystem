@@ -1,5 +1,5 @@
 import './App.css';
-import Tickets from './pages/Tickets';
+import Tickets from './pages/Tickets.js';
 
 import Booking from './pages/Booking';
 import MyBookings from './pages/MyBookings';

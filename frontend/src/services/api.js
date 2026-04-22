@@ -59,3 +59,5 @@ export const apiService = {
   rejectBooking:  (id, reason)        => api.put(`/bookings/${id}/reject`, null, { params: { reason } }),
   cancelBooking:  (id)                => api.put(`/bookings/${id}/cancel`),
 };
+
+export default api;
