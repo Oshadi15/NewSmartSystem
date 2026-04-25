@@ -1,63 +1,97 @@
 import axios from 'axios';
+import { authStorage } from './authStorage';
 
 const api = axios.create({
-    baseURL: 'http://localhost:8081/api',
+  baseURL: 'http://localhost:8081/api',
 });
 
-const readUserContext = () => {
-    try {
-        const raw = localStorage.getItem('user');
-        if (!raw) {
-            return { userId: 'USER_123', role: 'USER' };
-        }
-        const parsed = JSON.parse(raw);
-        return {
-            userId: parsed.userId || parsed.id || 'USER_123',
-            role: parsed.role || (parsed.isAdmin ? 'ADMIN' : 'USER'),
-        };
-    } catch (_err) {
-        return { userId: 'USER_123', role: 'USER' };
-    }
-};
-
+// ── Request interceptor — attach real auth headers from localStorage ──────
 api.interceptors.request.use((config) => {
-    const { userId, role } = readUserContext();
-    config.headers['X-User-Id'] = userId;
-    config.headers['X-User-Role'] = role;
-    return config;
-});
+  const userId = authStorage.userId;
+  const role   = authStorage.role;
 
+  // Skip auth headers for the login endpoint itself
+  if (!config.url?.startsWith('/auth/')) {
+    if (userId) config.headers['X-User-Id']   = userId;
+    if (role)   config.headers['X-User-Role'] = role;
+  }
+  return config;
+}, (error) => Promise.reject(error));
 
+// ── Response interceptor — normalise errors to human-readable messages ────
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status  = error.response?.status;
+    const message = error.response?.data?.message || error.message || 'An unexpected error occurred';
+
+    if ((status === 401 || status === 403) && !error.config?.url?.startsWith('/auth/')) {
+      // Stale or invalid session — clear storage and redirect to login
+      localStorage.removeItem('campus_auth');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+
+    console.error(`API Error [${status}]:`, message);
+    return Promise.reject(new Error(message));
+  }
+);
 
 export const apiService = {
-    getResources: () => api.get('/resources'),
-    createTicket: (data) => api.post('/tickets', data),
-    getUserTickets: (userId) => api.get(`/tickets/user/${userId}`),
-    getAllTickets: () => api.get('/tickets'),
-    getTicket: (id) => api.get(`/tickets/${id}`),
-    assignTicket: (id, adminId) => api.put(`/tickets/${id}/assign`, null, { params: { adminId } }),
-    updateTicketStatus: (id, status, reason) =>
-        api.put(`/tickets/${id}/status`, null, { params: reason ? { status, reason } : { status } }),
-    resolveTicket: (id, notes) =>
-        api.put(`/tickets/${id}/resolve`, null, { params: notes ? { notes } : {} }),
-    addTicketComment: (id, _ignored, content) => api.post(`/tickets/${id}/comments`, { content }),
-    editTicketComment: (id, commentId, content) =>
-        api.put(`/tickets/${id}/comments/${commentId}`, { content }),
-    deleteTicketComment: (id, commentId) => api.delete(`/tickets/${id}/comments/${commentId}`),
-    uploadTicketAttachment: (id, file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return api.post(`/tickets/${id}/attachments`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
-    },
-    // ── Bookings ───────────────────────────────────────────────────────────────
+  // ── Auth ─────────────────────────────────────────────────────────────────
+  loginWithGoogle: (data)   => api.post('/auth/google', data),
+  getProfile:      (userId) => api.get(`/auth/me/${userId}`),
+
+  // ── Admin ─────────────────────────────────────────────────────────────────
+  getAdminStats: () => api.get('/admin/stats'),
+  getUsers:      () => api.get('/admin/users'),
+  createUser:    (data) => api.post('/admin/users', data),
+  updateUserRole:(id, role) => api.put(`/admin/users/${id}/role`, null, { params: { role } }),
+
+  // ── Resources ─────────────────────────────────────────────────────────────
+  getResources:      (params)    => api.get('/resources', { params }),
+  createResource:    (data)      => api.post('/resources', data),
+  updateResource:    (id, data)  => api.put(`/resources/${id}`, data),
+  setResourceStatus: (id, val)   => api.patch(`/resources/${id}/status`, null, { params: { value: val } }),
+  deleteResource:    (id)        => api.delete(`/resources/${id}`),
+
+  // ── Bookings ───────────────────────────────────────────────────────────────
   createBooking:  (data)              => api.post('/bookings', data),
   getUserBookings:(userId)            => api.get(`/bookings/user/${userId}`),
   getAllBookings:  (status, resourceId)=> api.get('/bookings', { params: { ...(status && { status }), ...(resourceId && { resourceId }) } }),
   approveBooking: (id)                => api.put(`/bookings/${id}/approve`),
   rejectBooking:  (id, reason)        => api.put(`/bookings/${id}/reject`, null, { params: { reason } }),
   cancelBooking:  (id)                => api.put(`/bookings/${id}/cancel`),
+
+  // ── Tickets ────────────────────────────────────────────────────────────────
+  createTicket:       (data)               => api.post('/tickets', data),
+  getUserTickets:     (userId)             => api.get(`/tickets/user/${userId}`),
+  getAllTickets:       ()                   => api.get('/tickets'),
+  getTicket:          (id)                  => api.get(`/tickets/${id}`),
+  assignTicket:       (id, adminId)         => api.put(`/tickets/${id}/assign`, null, { params: { adminId } }),
+  updateTicketStatus: (id, status, reason)  =>
+    api.put(`/tickets/${id}/status`, null, { params: reason ? { status, reason } : { status } }),
+  resolveTicket:      (id, notes)           =>
+    api.put(`/tickets/${id}/resolve`, null, { params: notes ? { notes } : {} }),
+  addTicketComment:   (id, _ignored, content) =>
+    api.post(`/tickets/${id}/comments`, { content }),
+  editTicketComment:  (id, commentId, content) =>
+    api.put(`/tickets/${id}/comments/${commentId}`, { content }),
+  deleteTicketComment:(id, commentId)       => api.delete(`/tickets/${id}/comments/${commentId}`),
+  uploadTicketAttachment: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/tickets/${id}/attachments`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+  getUserNotifications: (userId) => api.get(`/notifications/user/${userId}`),
+  getUnreadCount:       (userId) => api.get(`/notifications/user/${userId}/unread-count`),
+  markNotificationRead: (id)     => api.put(`/notifications/${id}/read`),
+  markAllNotificationsRead: (userId) => api.put(`/notifications/user/${userId}/read-all`),
+  deleteNotification:   (id)     => api.delete(`/notifications/${id}`),
+  clearAllNotifications:(userId) => api.delete(`/notifications/user/${userId}/clear-all`),
 };
 
 export default api;

@@ -3,11 +3,14 @@ package com.campus.backend.service;
 import com.campus.backend.dto.CreateTicketRequest;
 import com.campus.backend.dto.TicketDTO;
 import com.campus.backend.exception.ResourceNotFoundException;
-import com.campus.backend.exception.UnauthorizedException;
 import com.campus.backend.exception.ValidationException;
 import com.campus.backend.model.Ticket;
 import com.campus.backend.model.TicketComment;
 import com.campus.backend.model.TicketStatus;
+import com.campus.backend.model.NotificationType;
+import com.campus.backend.model.Role;
+import com.campus.backend.model.User;
+import com.campus.backend.repository.UserRepository;
 import com.campus.backend.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,9 @@ import java.util.stream.Collectors;
 public class TicketService {
 
     private final TicketRepository ticketRepository;
+    private final NotificationService notificationService;
+    private final ResourceService resourceService;
+    private final UserRepository userRepository;
 
     /**
      * Valid status transitions.
@@ -61,6 +67,9 @@ public class TicketService {
                 .build();
 
         Ticket saved = ticketRepository.save(ticket);
+        notifyAdminsAndTechnicians(
+                "🆕 New ticket submitted: " + saved.getCategory() + " (priority: " + saved.getPriority() + ")"
+        );
         log.info("Ticket created: id={}", saved.getId());
         return mapToDTO(saved);
     }
@@ -86,7 +95,19 @@ public class TicketService {
         if (ticket.getStatus() == TicketStatus.OPEN) {
             ticket.setStatus(TicketStatus.IN_PROGRESS);
         }
-        return mapToDTO(ticketRepository.save(ticket));
+        Ticket updated = ticketRepository.save(ticket);
+
+        notificationService.createNotification(
+                updated.getReporterId(),
+                "🔧 Your ticket has been assigned to a technician and is now IN PROGRESS.",
+                NotificationType.TICKET_STATUS_CHANGED
+        );
+        notificationService.createNotification(
+                adminId,
+                "🛠️ A ticket has been assigned to you: #" + shortTicketId(updated.getId()),
+                NotificationType.TICKET_STATUS_CHANGED
+        );
+        return mapToDTO(updated);
     }
 
     public TicketDTO updateStatus(String id, TicketStatus newStatus, String reason) {
@@ -111,7 +132,21 @@ public class TicketService {
         }
 
         ticket.setStatus(newStatus);
-        return mapToDTO(ticketRepository.save(ticket));
+        Ticket updated = ticketRepository.save(ticket);
+
+        String emoji = switch (newStatus) {
+            case RESOLVED -> "✅";
+            case CLOSED   -> "🔒";
+            case REJECTED -> "❌";
+            default       -> "📋";
+        };
+        notificationService.createNotification(
+                updated.getReporterId(),
+                emoji + " Your ticket status has been updated to: " + newStatus
+                        + (reason != null && !reason.isBlank() ? ". Reason: " + reason : ""),
+                NotificationType.TICKET_STATUS_CHANGED
+        );
+        return mapToDTO(updated);
     }
 
     public TicketDTO addComment(String id, String authorId, String content) {
@@ -130,10 +165,24 @@ public class TicketService {
         ticket.getComments().add(comment);
         Ticket updated = ticketRepository.save(ticket);
 
+        if (!updated.getReporterId().equals(authorId)) {
+            notificationService.createNotification(
+                    updated.getReporterId(),
+                    "💬 A new comment was added to your ticket #" + updated.getId().substring(0, 8),
+                    NotificationType.NEW_COMMENT
+            );
+        }
+        if (updated.getAssignedTo() != null && !updated.getAssignedTo().equals(authorId)) {
+            notificationService.createNotification(
+                    updated.getAssignedTo(),
+                    "💬 A new comment was added on assigned ticket #" + shortTicketId(updated.getId()),
+                    NotificationType.NEW_COMMENT
+            );
+        }
         return mapToDTO(updated);
     }
 
-    public TicketDTO deleteComment(String id, String commentId, String requestUserId, String requestUserRole) {
+    public TicketDTO deleteComment(String id, String commentId, String requestUserId, String userRole) {
         Ticket ticket = fetchTicket(id);
 
         TicketComment target = ticket.getComments().stream()
@@ -141,10 +190,9 @@ public class TicketService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
 
-        boolean isAdmin = "ADMIN".equalsIgnoreCase(requestUserRole);
-        boolean isOwner = target.getAuthorId().equals(requestUserId);
-        if (!isOwner && !isAdmin) {
-            throw new UnauthorizedException("Only comment owner or ADMIN can delete this comment.");
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(userRole);
+        if (!target.getAuthorId().equals(requestUserId) && !isAdmin) {
+            throw new ValidationException("You can only delete your own comments.");
         }
 
         ticket.getComments().remove(target);
@@ -167,7 +215,6 @@ public class TicketService {
             throw new ValidationException("You can only edit your own comments.");
         }
         target.setContent(newContent.trim());
-        target.setUpdatedAt(LocalDateTime.now());
         return mapToDTO(ticketRepository.save(ticket));
     }
 
@@ -187,14 +234,17 @@ public class TicketService {
     /** Admin resolves a ticket and optionally stores resolution notes. */
     public TicketDTO resolveWithNotes(String id, String notes) {
         Ticket ticket = fetchTicket(id);
-        if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
-            throw new ValidationException("Only IN_PROGRESS tickets can be resolved.");
-        }
         ticket.setStatus(TicketStatus.RESOLVED);
         if (notes != null && !notes.isBlank()) {
             ticket.setResolutionNotes(notes.trim());
         }
-        return mapToDTO(ticketRepository.save(ticket));
+        Ticket updated = ticketRepository.save(ticket);
+        notificationService.createNotification(
+                updated.getReporterId(),
+                "✅ Your ticket has been RESOLVED. Notes: " + (notes != null ? notes : "No notes provided."),
+                NotificationType.TICKET_STATUS_CHANGED
+        );
+        return mapToDTO(updated);
     }
 
     protected Ticket fetchTicket(String id) {
@@ -202,11 +252,31 @@ public class TicketService {
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
     }
 
+    private String enrichResourceName(String resourceId) {
+        if (resourceId == null) return null;
+        try { return resourceService.fetchResource(resourceId).getName(); }
+        catch (Exception e) { return resourceId; }
+    }
+
+    private void notifyAdminsAndTechnicians(String message) {
+        List<User> staff = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.ADMIN || u.getRole() == Role.TECHNICIAN)
+                .collect(Collectors.toList());
+        for (User user : staff) {
+            notificationService.createNotification(user.getId(), message, NotificationType.TICKET_STATUS_CHANGED);
+        }
+    }
+
+    private String shortTicketId(String id) {
+        if (id == null) return "unknown";
+        return id.length() <= 8 ? id : id.substring(0, 8);
+    }
+
     private TicketDTO mapToDTO(Ticket ticket) {
         TicketDTO dto = new TicketDTO();
         dto.setId(ticket.getId());
         dto.setResourceId(ticket.getResourceId());
-        dto.setResourceName(ticket.getResourceId());
+        dto.setResourceName(enrichResourceName(ticket.getResourceId()));
         dto.setReporterId(ticket.getReporterId());
         dto.setCategory(ticket.getCategory());
         dto.setDescription(ticket.getDescription());
