@@ -49,6 +49,10 @@ public class TicketService {
             TicketStatus.REJECTED,    Set.of()
     );
 
+    /**
+     * Create a new ticket from the user's request.
+     * Validates attachment count, saves the ticket, and notifies admins/technicians.
+     */
     public TicketDTO createTicket(CreateTicketRequest request) {
         log.info("Creating ticket: reporterId={}, category={}", request.getReporterId(), request.getCategory());
 
@@ -75,20 +79,32 @@ public class TicketService {
         return mapToDTO(saved);
     }
 
+    /**
+     * Fetch all tickets, ordered newest first. Used by admin dashboards.
+     */
     public List<TicketDTO> getAllTickets() {
         return ticketRepository.findAllByOrderByCreatedAtDesc()
                 .stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
+    /**
+     * Fetch all tickets for a specific user, ordered newest first.
+     */
     public List<TicketDTO> getUserTickets(String userId) {
         return ticketRepository.findByReporterIdOrderByCreatedAtDesc(userId)
                 .stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
+    /**
+     * Return a single ticket by its id.
+     */
     public TicketDTO getTicket(String id) {
         return mapToDTO(fetchTicket(id));
     }
 
+    /**
+     * Assign a ticket to a technician/admin and move it into IN_PROGRESS if it was open.
+     */
     public TicketDTO assignTicket(String id, String assigneeUserId) {
         log.info("Assigning ticket id={} to assigneeId={}", id, assigneeUserId);
         Ticket ticket = fetchTicket(id);
@@ -113,6 +129,10 @@ public class TicketService {
         return mapToDTO(updated);
     }
 
+    /**
+     * Advance the ticket workflow status with validation.
+     * Supports rejection reasons and notifies the reporter on status changes.
+     */
     public TicketDTO updateStatus(String id, TicketStatus newStatus, String reason, String requestUserId, String requestUserRole) {
         log.info("Updating ticket id={} to status={}", id, newStatus);
         Ticket ticket = fetchTicket(id);
@@ -155,6 +175,9 @@ public class TicketService {
         return mapToDTO(updated);
     }
 
+    /**
+     * Add a new comment to a ticket and notify the reporter/assignee if needed.
+     */
     public TicketDTO addComment(String id, String authorId, String content) {
         if (content == null || content.isBlank()) {
             throw new ValidationException("Comment content cannot be empty.");
@@ -192,6 +215,9 @@ public class TicketService {
         return mapToDTO(updated);
     }
 
+    /**
+     * Delete a comment from a ticket when the user is comment owner or an admin/technician.
+     */
     public TicketDTO deleteComment(String id, String commentId, String requestUserId, String userRole) {
         Ticket ticket = fetchTicket(id);
 
@@ -209,6 +235,10 @@ public class TicketService {
         return mapToDTO(ticketRepository.save(ticket));
     }
 
+    /**
+     * Delete a ticket after checking role and workflow state.
+     * Admin can delete resolved/rejected tickets; users can delete their own resolved/rejected tickets.
+     */
     public void deleteTicket(String id, String requestUserId, String requestUserRole) {
         Ticket ticket = fetchTicket(id);
         boolean isAdmin = "ADMIN".equalsIgnoreCase(requestUserRole);
@@ -234,7 +264,9 @@ public class TicketService {
         ticketRepository.delete(ticket);
     }
 
-    /** Edit an existing comment — only the original author can edit. */
+    /**
+     * Edit a ticket comment. Only the original author may update the comment.
+     */
     public TicketDTO editComment(String ticketId, String commentId, String requestUserId, String newContent) {
         if (newContent == null || newContent.isBlank()) {
             throw new ValidationException("Comment content cannot be empty.");
@@ -253,7 +285,10 @@ public class TicketService {
         return mapToDTO(ticketRepository.save(ticket));
     }
 
-    /** Add an attachment URL/path to a ticket (max 3 total). */
+    /**
+     * Add an attachment path to a ticket record.
+     * Only the ticket reporter can add attachments, and only up to 3 total.
+     */
     public TicketDTO addAttachment(String id, String attachmentUrl, String requestUserId) {
         Ticket ticket = fetchTicket(id);
         if (!ticket.getReporterId().equals(requestUserId)) {
@@ -266,7 +301,9 @@ public class TicketService {
         return mapToDTO(ticketRepository.save(ticket));
     }
 
-    /** Admin resolves a ticket and optionally stores resolution notes. */
+    /**
+     * Mark a ticket as resolved, store optional notes, and notify the reporter.
+     */
     public TicketDTO resolveWithNotes(String id, String notes, String requestUserId, String requestUserRole) {
         Ticket ticket = fetchTicket(id);
         enforceTechnicianAccess(ticket, requestUserId, requestUserRole);
@@ -286,17 +323,26 @@ public class TicketService {
         return mapToDTO(updated);
     }
 
+    /**
+     * Load a ticket by id, throwing a not found exception if it does not exist.
+     */
     protected Ticket fetchTicket(String id) {
         return ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
     }
 
+    /**
+     * Resolve a resource id into a display name when possible.
+     */
     private String enrichResourceName(String resourceId) {
         if (resourceId == null) return null;
         try { return resourceService.fetchResource(resourceId).getName(); }
         catch (Exception e) { return resourceId; }
     }
 
+    /**
+     * Send a notification message to all admin and technician users.
+     */
     private void notifyAdminsAndTechnicians(String message) {
         List<User> staff = userRepository.findAll().stream()
                 .filter(u -> u.getRole() == Role.ADMIN || u.getRole() == Role.TECHNICIAN)
@@ -306,6 +352,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * Notify other technicians that a ticket has been assigned.
+     */
     private void notifyTechniciansAboutAssignment(String ticketId, String assignedUserId) {
         List<User> technicians = userRepository.findAll().stream()
                 .filter(u -> u.getRole() == Role.TECHNICIAN)
@@ -323,11 +372,17 @@ public class TicketService {
         }
     }
 
+    /**
+     * Create a short 8-character version of the ticket id for display.
+     */
     private String shortTicketId(String id) {
         if (id == null) return "unknown";
         return id.length() <= 8 ? id : id.substring(0, 8);
     }
 
+    /**
+     * Prevent technicians from acting on tickets not assigned to them.
+     */
     private void enforceTechnicianAccess(Ticket ticket, String requestUserId, String requestUserRole) {
         if (!"TECHNICIAN".equalsIgnoreCase(requestUserRole)) {
             return;
@@ -337,6 +392,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * Convert a Ticket entity into a TicketDTO for REST responses.
+     */
     private TicketDTO mapToDTO(Ticket ticket) {
         TicketDTO dto = new TicketDTO();
         dto.setId(ticket.getId());

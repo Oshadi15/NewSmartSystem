@@ -314,7 +314,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* ── Tabs ── */}
+      {/* ── TICKET ── */}
       {/* ── Tabs ── */}
       <div className="flex items-center justify-between" style={{ marginBottom: 22 }}>
         <div className="tabs" style={{ marginBottom: 0 }}>

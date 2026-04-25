@@ -22,7 +22,7 @@ const TicketForm = ({ onSuccess }) => {
       .catch(() => {});
   }, []);
 
-  // Basic client-side validation before submitting to backend.
+  // Validate the ticket form fields before submission.
   const validate = () => {
     const e = {};
     if (!form.category)           e.category    = 'Category is required.';
