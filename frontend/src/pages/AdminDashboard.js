@@ -75,7 +75,7 @@ const AdminDashboard = () => {
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEffect(() => { if (message) { const t = setTimeout(() => setMessage(''), 4000); return () => clearTimeout(t); } }, [message]);
 
-  /* ── Booking actions ── */
+  // Booking actions
   const handleApprove = async (id) => {
     clearAlerts();
     try { await apiService.approveBooking(id); setMessage('✅ Booking approved.'); fetchAll(); }
