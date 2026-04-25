@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { authStorage } from '../services/authStorage';
-import { apiService as api } from '../services/api';
+import api from '../services/api';
 
 /**
  * AuthContext — provides login/logout state to the whole app.
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       // Make network errors human-readable
       const message = err.message === 'Network Error'
-        ? 'Cannot connect to the backend (port 9090). Make sure the Spring Boot server is running.'
+        ? 'Cannot connect to the backend (port 8081). Make sure the Spring Boot server is running.'
         : err.message || 'Login failed. Please try again.';
       throw new Error(message);
     }
