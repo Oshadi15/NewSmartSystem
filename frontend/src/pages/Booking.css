@@ -102,6 +102,27 @@
   min-width: 0;
 }
 
+/* Make native date/time picker icons visible on dark inputs */
+.booking-page input[type="date"].form-input,
+.booking-page input[type="time"].form-input,
+.booking-page input[type="datetime-local"].form-input {
+  color-scheme: dark;
+}
+
+.booking-page input[type="date"].form-input::-webkit-calendar-picker-indicator,
+.booking-page input[type="time"].form-input::-webkit-calendar-picker-indicator,
+.booking-page input[type="datetime-local"].form-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.9;
+  filter: invert(1) brightness(1.2);
+}
+
+.booking-page input[type="date"].form-input::-webkit-calendar-picker-indicator:hover,
+.booking-page input[type="time"].form-input::-webkit-calendar-picker-indicator:hover,
+.booking-page input[type="datetime-local"].form-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .booking-page .form-input::placeholder {
   color: var(--text-muted);
 }
