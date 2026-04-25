@@ -41,12 +41,14 @@ const AdminDashboard = () => {
   const [tab,          setTab]          = useState('bookings');
   const [bookings,     setBookings]     = useState([]);
   const [tickets,      setTickets]      = useState([]);
+  const [resources,    setResources]    = useState([]);
   const [users,        setUsers]        = useState([]);
   const [stats,        setStats]        = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState('');
   const [message,      setMessage]      = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [resourceFilter, setResourceFilter] = useState('');
   const [rejectModal,  setRejectModal]  = useState({ open: false, id: null, type: '', reason: '' });
   const [userModal,    setUserModal]    = useState({ open: false, name: '', email: '', role: 'USER' });
 
@@ -55,16 +57,18 @@ const AdminDashboard = () => {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [bookRes, tickRes, statsRes, userRes] = await Promise.all([
+      const [bookRes, tickRes, statsRes, userRes, resRes] = await Promise.all([
         apiService.getAllBookings(),
         apiService.getAllTickets(),
         apiService.getAdminStats(),
         apiService.getUsers(),
+        apiService.getResources(),
       ]);
       setBookings(bookRes.data);
       setTickets(tickRes.data);
       setStats(statsRes.data);
       setUsers(userRes.data);
+      setResources(resRes.data || []);
       setError('');
     } catch (err) {
       setError(err.message);
@@ -76,11 +80,39 @@ const AdminDashboard = () => {
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEffect(() => { if (message) { const t = setTimeout(() => setMessage(''), 4000); return () => clearTimeout(t); } }, [message]);
 
+  const fetchBookings = useCallback(async () => {
+    try {
+      const res = await apiService.getAllBookings(
+        statusFilter || undefined,
+        resourceFilter || undefined
+      );
+      setBookings(res.data || []);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [statusFilter, resourceFilter]);
+
+  useEffect(() => {
+    if (tab !== 'bookings') return;
+    fetchBookings();
+  }, [tab, fetchBookings]);
+
   // Booking actions
   const handleApprove = async (id) => {
     clearAlerts();
     try { await apiService.approveBooking(id); setMessage('✅ Booking approved.'); fetchAll(); }
     catch (err) { setError(err.message); }
+  };
+  const handleCancelBooking = async (id) => {
+    if (!window.confirm('Cancel this APPROVED booking?')) return;
+    clearAlerts();
+    try {
+      await apiService.cancelBooking(id);
+      setMessage('✅ Booking cancelled.');
+      fetchAll();
+    } catch (err) {
+      setError(err.message);
+    }
   };
   const openRejectModal = (id, type = 'booking') =>
     setRejectModal({ open: true, id, type, reason: '' });
@@ -258,8 +290,31 @@ const AdminDashboard = () => {
             )}
           </select>
         </div>
+
+        {tab === 'bookings' && (
+          <div className="form-group">
+            <label className="form-label">Filter by Resource</label>
+            <select
+              value={resourceFilter}
+              onChange={(e) => setResourceFilter(e.target.value)}
+              className="form-select"
+              style={{ minWidth: 220 }}
+            >
+              <option value="">All Resources</option>
+              {(resources || []).map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} · {r.location}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {statusFilter && (
           <button className="btn btn-ghost btn-sm" onClick={() => setStatusFilter('')}>✕ Clear</button>
+        )}
+        {tab === 'bookings' && resourceFilter && (
+          <button className="btn btn-ghost btn-sm" onClick={() => setResourceFilter('')}>✕ Clear Resource</button>
         )}
         <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
           {tab === 'bookings' ? filteredBookings.length : filteredTickets.length} result(s)
@@ -271,7 +326,13 @@ const AdminDashboard = () => {
       {loading ? (
         <div className="table-wrap"><SkeletonRows n={5} /></div>
       ) : tab === 'bookings' ? (
-        <BookingList bookings={filteredBookings} onApprove={handleApprove} onReject={(id) => openRejectModal(id, 'booking')} showActions />
+        <BookingList
+          bookings={filteredBookings}
+          onApprove={handleApprove}
+          onReject={(id) => openRejectModal(id, 'booking')}
+          onCancel={handleCancelBooking}
+          showActions
+        />
       ) : tab === 'tickets' ? (
         /* ── Ticket Table ── */
         <div className="table-wrap">

@@ -105,8 +105,6 @@ public class BookingController {
             @RequestAttribute("userId") String requestUserId,
             @RequestAttribute("userRole") String userRole) {
 
-        // ADMIN can cancel any booking; USER can only cancel their own
-        String userIdForCancel = requestUserId;
-        return ResponseEntity.ok(bookingService.cancelBooking(id, userIdForCancel));
+        return ResponseEntity.ok(bookingService.cancelBooking(id, requestUserId, userRole));
     }
 }
