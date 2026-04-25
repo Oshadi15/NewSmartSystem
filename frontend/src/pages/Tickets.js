@@ -3,6 +3,7 @@ import { apiService } from '../services/api';
 import { useAuth }    from '../contexts/AuthContext';
 import TicketForm     from '../components/TicketForm';
 import StatusBadge    from '../components/StatusBadge';
+import './Tickets.css';
 
 /* ── Constants ─────────────────────────────────────────────── */
 const STATUS_TRANSITIONS = {
@@ -94,7 +95,7 @@ const Tickets = () => {
   const filtered = filterStatus ? tickets.filter(t => t.status === filterStatus) : tickets;
 
   return (
-    <>
+    <div className="tickets-page">
       {/* Page Header */}
       <div className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
@@ -310,7 +311,7 @@ const Tickets = () => {
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 };
 
