@@ -19,10 +19,10 @@ import java.time.LocalDateTime;
  * <p>Auditing timestamps (createdAt, updatedAt) are populated
  * automatically by Spring Data MongoDB via {@code @EnableMongoAuditing}.</p>
  */
-//@Data
-//@Builder
-//@NoArgsConstructor
-//@AllArgsConstructor
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Document(collection = "resources")
 public class Resource {
 
@@ -34,7 +34,7 @@ public class Resource {
     private String name;
 
     /** Broad classification of the resource. */
-    //private ResourceType type;
+    private ResourceType type;
 
     /**
      * Maximum occupancy. Optional for EQUIPMENT type —
@@ -50,12 +50,12 @@ public class Resource {
      * Daily availability window. When null, the resource is
      * considered available without time restriction.
      */
-    //private ResourceAvailability availability;
+    private ResourceAvailability availability;
 
     /**
      * Operational status. Only ACTIVE resources can be booked.
      */
-    //private ResourceStatus status;
+    private ResourceStatus status;
 
     // ── Audit timestamps ─────────────────────────────────────────────────────
 
@@ -70,7 +70,7 @@ public class Resource {
     /**
      * Returns true if this resource is bookable (status is ACTIVE).
      */
-    //public boolean isBookable() {
-    //    return ResourceStatus.ACTIVE.equals(this.status);
-    //}
+    public boolean isBookable() {
+        return ResourceStatus.ACTIVE.equals(this.status);
+    }
 }

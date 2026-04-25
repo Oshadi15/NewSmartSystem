@@ -1,8 +1,8 @@
 package com.campus.backend.repository;
 
 import com.campus.backend.model.Resource;
-//import com.campus.backend.model.ResourceStatus;
-//import com.campus.backend.model.ResourceType;
+import com.campus.backend.model.ResourceStatus;
+import com.campus.backend.model.ResourceType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -20,9 +20,9 @@ public interface ResourceRepository extends MongoRepository<Resource, String> {
 
     // ── Single-field queries (used as fallback) ───────────────────────────────
 
-    //List<Resource> findByType(ResourceType type);
+    List<Resource> findByType(ResourceType type);
 
-    //List<Resource> findByStatus(ResourceStatus status);
+    List<Resource> findByStatus(ResourceStatus status);
 
     List<Resource> findByCapacityGreaterThanEqual(Integer capacity);
 
@@ -33,7 +33,7 @@ public interface ResourceRepository extends MongoRepository<Resource, String> {
 
     Page<Resource> findAll(Pageable pageable);
 
-   // Page<Resource> findByStatus(ResourceStatus status, Pageable pageable);
+    Page<Resource> findByStatus(ResourceStatus status, Pageable pageable);
 
     // ── Existence checks ─────────────────────────────────────────────────────
 

@@ -1,8 +1,8 @@
 package com.campus.backend.dto;
 
-//import com.campus.backend.model.ResourceAvailability;
-//import com.campus.backend.model.ResourceStatus;
-//import com.campus.backend.model.ResourceType;
+import com.campus.backend.model.ResourceAvailability;
+import com.campus.backend.model.ResourceStatus;
+import com.campus.backend.model.ResourceType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -14,14 +14,14 @@ import lombok.Data;
  * <p>Capacity is optional for EQUIPMENT type — the {@code @Min}
  * constraint only fires when a value IS provided.</p>
  */
-//@Data
+@Data
 public class CreateResourceRequest {
 
     @NotBlank(message = "Name is required")
     private String name;
 
     @NotNull(message = "Type is required")
-    //private ResourceType type;
+    private ResourceType type;
 
     /**
      * Capacity is optional for EQUIPMENT; required for rooms/labs.
@@ -37,8 +37,8 @@ public class CreateResourceRequest {
      * Optional structured availability window (startTime / endTime).
      * When provided, startTime must be strictly before endTime.
      */
-    //private ResourceAvailability availability;
+    private ResourceAvailability availability;
 
     /** Defaults to ACTIVE if not specified. */
-    //private ResourceStatus status = ResourceStatus.ACTIVE;
+    private ResourceStatus status = ResourceStatus.ACTIVE;
 }
