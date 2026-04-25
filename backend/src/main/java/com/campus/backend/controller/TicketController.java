@@ -67,8 +67,8 @@ public class TicketController {
     @GetMapping
     public ResponseEntity<List<TicketDTO>> getAllTickets(
             @RequestHeader(value = "X-User-Role", defaultValue = "USER") String userRole) {
-        if (!"ADMIN".equalsIgnoreCase(userRole)) {
-            throw new UnauthorizedException("Only ADMIN can view all tickets.");
+        if (!"ADMIN".equalsIgnoreCase(userRole) && !"TECHNICIAN".equalsIgnoreCase(userRole)) {
+            throw new UnauthorizedException("Only ADMIN or TECHNICIAN can view all tickets.");
         }
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
@@ -80,8 +80,8 @@ public class TicketController {
             @RequestHeader("X-User-Id") String requestUserId,
             @RequestHeader(value = "X-User-Role", defaultValue = "USER") String userRole) {
         TicketDTO ticket = ticketService.getTicket(id);
-        boolean isAdmin = "ADMIN".equalsIgnoreCase(userRole);
-        if (!isAdmin && !requestUserId.equals(ticket.getReporterId())) {
+        boolean isAdminOrTech = "ADMIN".equalsIgnoreCase(userRole) || "TECHNICIAN".equalsIgnoreCase(userRole);
+        if (!isAdminOrTech && !requestUserId.equals(ticket.getReporterId())) {
             throw new UnauthorizedException("You may only view your own tickets.");
         }
         return ResponseEntity.ok(ticket);
@@ -94,13 +94,13 @@ public class TicketController {
             @RequestHeader("X-User-Id") String requestUserId,
             @RequestHeader(value = "X-User-Role", defaultValue = "USER") String userRole) {
 
-        if (!"ADMIN".equalsIgnoreCase(userRole) && !userId.equals(requestUserId)) {
+        if (!"ADMIN".equalsIgnoreCase(userRole) && !"TECHNICIAN".equalsIgnoreCase(userRole) && !userId.equals(requestUserId)) {
             throw new UnauthorizedException("You may only view your own tickets.");
         }
         return ResponseEntity.ok(ticketService.getUserTickets(userId));
     }
 
-    /** ADMIN only — assign a ticket to an admin/technician. */
+    /** ADMIN only — assign a ticket to a technician/staff user. */
     @PutMapping("/{id}/assign")
     public ResponseEntity<TicketDTO> assignTicket(
             @PathVariable String id,
@@ -119,12 +119,13 @@ public class TicketController {
             @PathVariable String id,
             @RequestParam TicketStatus status,
             @RequestParam(required = false) String reason,
+            @RequestHeader("X-User-Id") String requestUserId,
             @RequestHeader(value = "X-User-Role", defaultValue = "USER") String userRole) {
 
-        if (!"ADMIN".equalsIgnoreCase(userRole)) {
-            throw new UnauthorizedException("Only ADMIN can update ticket status.");
+        if (!"ADMIN".equalsIgnoreCase(userRole) && !"TECHNICIAN".equalsIgnoreCase(userRole)) {
+            throw new UnauthorizedException("Only ADMIN or TECHNICIAN can update ticket status.");
         }
-        return ResponseEntity.ok(ticketService.updateStatus(id, status, reason));
+        return ResponseEntity.ok(ticketService.updateStatus(id, status, reason, requestUserId, userRole));
     }
 
     /** ADMIN only — resolve ticket with optional resolution notes. */
@@ -132,12 +133,13 @@ public class TicketController {
     public ResponseEntity<TicketDTO> resolveTicket(
             @PathVariable String id,
             @RequestParam(required = false) String notes,
+            @RequestHeader("X-User-Id") String requestUserId,
             @RequestHeader(value = "X-User-Role", defaultValue = "USER") String userRole) {
 
-        if (!"ADMIN".equalsIgnoreCase(userRole)) {
-            throw new UnauthorizedException("Only ADMIN can resolve tickets.");
+        if (!"ADMIN".equalsIgnoreCase(userRole) && !"TECHNICIAN".equalsIgnoreCase(userRole)) {
+            throw new UnauthorizedException("Only ADMIN or TECHNICIAN can resolve tickets.");
         }
-        return ResponseEntity.ok(ticketService.resolveWithNotes(id, notes));
+        return ResponseEntity.ok(ticketService.resolveWithNotes(id, notes, requestUserId, userRole));
     }
 
     /** USER and ADMIN can add comments. authorId is taken from auth attribute. */
@@ -167,6 +169,26 @@ public class TicketController {
             @RequestHeader("X-User-Id") String requestUserId,
             @RequestHeader(value = "X-User-Role", defaultValue = "USER") String userRole) {
         return ResponseEntity.ok(ticketService.deleteComment(id, commentId, requestUserId, userRole));
+    }
+
+    /** USER can delete own resolved tickets; ADMIN can delete resolved tickets. */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTicket(
+            @PathVariable String id,
+            @RequestHeader("X-User-Id") String requestUserId,
+            @RequestHeader(value = "X-User-Role", defaultValue = "USER") String userRole) {
+        ticketService.deleteTicket(id, requestUserId, userRole);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Fallback delete endpoint for clients/environments where DELETE is blocked. */
+    @PostMapping("/{id}/delete")
+    public ResponseEntity<Void> deleteTicketViaPost(
+            @PathVariable String id,
+            @RequestHeader("X-User-Id") String requestUserId,
+            @RequestHeader(value = "X-User-Role", defaultValue = "USER") String userRole) {
+        ticketService.deleteTicket(id, requestUserId, userRole);
+        return ResponseEntity.noContent().build();
     }
 
     /**

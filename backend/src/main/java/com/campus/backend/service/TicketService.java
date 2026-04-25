@@ -89,31 +89,34 @@ public class TicketService {
         return mapToDTO(fetchTicket(id));
     }
 
-    public TicketDTO assignTicket(String id, String adminId) {
-        log.info("Assigning ticket id={} to adminId={}", id, adminId);
+    public TicketDTO assignTicket(String id, String assigneeUserId) {
+        log.info("Assigning ticket id={} to assigneeId={}", id, assigneeUserId);
         Ticket ticket = fetchTicket(id);
-        ticket.setAssignedTo(adminId);
+        User assignee = userRepository.findById(assigneeUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignee user not found with id: " + assigneeUserId));
+
+        ticket.setAssignedTo(assignee.getId());
         if (ticket.getStatus() == TicketStatus.OPEN) {
             ticket.setStatus(TicketStatus.IN_PROGRESS);
         }
         Ticket updated = ticketRepository.save(ticket);
 
+        // Only notify the assigned technician — NOT the reporter.
+        // Reporter will be notified when status changes (resolved/rejected).
         notificationService.createNotification(
-                updated.getReporterId(),
-                "🔧 Your ticket has been assigned to a technician and is now IN PROGRESS.",
-                NotificationType.TICKET_STATUS_CHANGED
-        );
-        notificationService.createNotification(
-                adminId,
-                "🛠️ A ticket has been assigned to you: #" + shortTicketId(updated.getId()),
-                NotificationType.TICKET_STATUS_CHANGED
+                assignee.getId(),
+                "🛠️ A ticket has been assigned to you: [" + updated.getCategory() + "] #" + shortTicketId(updated.getId()) + ". Open to view full details.",
+                NotificationType.TICKET_STATUS_CHANGED,
+                "TICKET",
+                updated.getId()
         );
         return mapToDTO(updated);
     }
 
-    public TicketDTO updateStatus(String id, TicketStatus newStatus, String reason) {
+    public TicketDTO updateStatus(String id, TicketStatus newStatus, String reason, String requestUserId, String requestUserRole) {
         log.info("Updating ticket id={} to status={}", id, newStatus);
         Ticket ticket = fetchTicket(id);
+        enforceTechnicianAccess(ticket, requestUserId, requestUserRole);
         TicketStatus current = ticket.getStatus();
 
         // Validate transition
@@ -145,7 +148,9 @@ public class TicketService {
                 updated.getReporterId(),
                 emoji + " Your ticket status has been updated to: " + newStatus
                         + (reason != null && !reason.isBlank() ? ". Reason: " + reason : ""),
-                NotificationType.TICKET_STATUS_CHANGED
+                NotificationType.TICKET_STATUS_CHANGED,
+                "TICKET",
+                updated.getId()
         );
         return mapToDTO(updated);
     }
@@ -170,14 +175,18 @@ public class TicketService {
             notificationService.createNotification(
                     updated.getReporterId(),
                     "💬 A new comment was added to your ticket #" + updated.getId().substring(0, 8),
-                    NotificationType.NEW_COMMENT
+                    NotificationType.NEW_COMMENT,
+                    "TICKET",
+                    updated.getId()
             );
         }
         if (updated.getAssignedTo() != null && !updated.getAssignedTo().equals(authorId)) {
             notificationService.createNotification(
                     updated.getAssignedTo(),
                     "💬 A new comment was added on assigned ticket #" + shortTicketId(updated.getId()),
-                    NotificationType.NEW_COMMENT
+                    NotificationType.NEW_COMMENT,
+                    "TICKET",
+                    updated.getId()
             );
         }
         return mapToDTO(updated);
@@ -191,13 +200,37 @@ public class TicketService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
 
-        boolean isAdmin = "ADMIN".equalsIgnoreCase(userRole);
-        if (!target.getAuthorId().equals(requestUserId) && !isAdmin) {
+        boolean isAdminOrTech = "ADMIN".equalsIgnoreCase(userRole) || "TECHNICIAN".equalsIgnoreCase(userRole);
+        if (!target.getAuthorId().equals(requestUserId) && !isAdminOrTech) {
             throw new ValidationException("You can only delete your own comments.");
         }
 
         ticket.getComments().remove(target);
         return mapToDTO(ticketRepository.save(ticket));
+    }
+
+    public void deleteTicket(String id, String requestUserId, String requestUserRole) {
+        Ticket ticket = fetchTicket(id);
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(requestUserRole);
+        boolean isReporter = requestUserId.equals(ticket.getReporterId());
+
+        boolean isResolved = ticket.getStatus() == TicketStatus.RESOLVED;
+
+        if (isAdmin) {
+            if (!isResolved) {
+                throw new ValidationException("Tickets can only be deleted after they are RESOLVED.");
+            }
+            ticketRepository.delete(ticket);
+            return;
+        }
+
+        if (!isReporter) {
+            throw new ValidationException("You can only delete your own tickets.");
+        }
+        if (!isResolved) {
+            throw new ValidationException("You can only delete your tickets after they are RESOLVED.");
+        }
+        ticketRepository.delete(ticket);
     }
 
     /** Edit an existing comment — only the original author can edit. */
@@ -233,9 +266,11 @@ public class TicketService {
     }
 
     /** Admin resolves a ticket and optionally stores resolution notes. */
-    public TicketDTO resolveWithNotes(String id, String notes) {
+    public TicketDTO resolveWithNotes(String id, String notes, String requestUserId, String requestUserRole) {
         Ticket ticket = fetchTicket(id);
+        enforceTechnicianAccess(ticket, requestUserId, requestUserRole);
         ticket.setStatus(TicketStatus.RESOLVED);
+        ticket.setResolvedBy(requestUserId);
         if (notes != null && !notes.isBlank()) {
             ticket.setResolutionNotes(notes.trim());
         }
@@ -243,7 +278,9 @@ public class TicketService {
         notificationService.createNotification(
                 updated.getReporterId(),
                 "✅ Your ticket has been RESOLVED. Notes: " + (notes != null ? notes : "No notes provided."),
-                NotificationType.TICKET_STATUS_CHANGED
+                NotificationType.TICKET_STATUS_CHANGED,
+                "TICKET",
+                updated.getId()
         );
         return mapToDTO(updated);
     }
@@ -268,9 +305,35 @@ public class TicketService {
         }
     }
 
+    private void notifyTechniciansAboutAssignment(String ticketId, String assignedUserId) {
+        List<User> technicians = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.TECHNICIAN)
+                .filter(u -> !u.getId().equals(assignedUserId))
+                .collect(Collectors.toList());
+
+        for (User technician : technicians) {
+            notificationService.createNotification(
+                    technician.getId(),
+                    "🛠️ Ticket #" + shortTicketId(ticketId) + " was assigned by admin. Open to view details.",
+                    NotificationType.TICKET_STATUS_CHANGED,
+                    "TICKET",
+                    ticketId
+            );
+        }
+    }
+
     private String shortTicketId(String id) {
         if (id == null) return "unknown";
         return id.length() <= 8 ? id : id.substring(0, 8);
+    }
+
+    private void enforceTechnicianAccess(Ticket ticket, String requestUserId, String requestUserRole) {
+        if (!"TECHNICIAN".equalsIgnoreCase(requestUserRole)) {
+            return;
+        }
+        if (ticket.getAssignedTo() == null || !ticket.getAssignedTo().equals(requestUserId)) {
+            throw new ValidationException("Technicians can only update tickets assigned to themselves.");
+        }
     }
 
     private TicketDTO mapToDTO(Ticket ticket) {
@@ -289,6 +352,7 @@ public class TicketService {
         dto.setAttachments(ticket.getAttachments());
         dto.setRejectionReason(ticket.getRejectionReason());
         dto.setResolutionNotes(ticket.getResolutionNotes());
+        dto.setResolvedBy(ticket.getResolvedBy());
         dto.setCreatedAt(ticket.getCreatedAt());
         dto.setUpdatedAt(ticket.getUpdatedAt());
         return dto;

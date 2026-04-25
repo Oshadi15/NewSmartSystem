@@ -25,8 +25,8 @@ api.interceptors.response.use(
     const status  = error.response?.status;
     const message = error.response?.data?.message || error.message || 'An unexpected error occurred';
 
-    if ((status === 401 || status === 403) && !error.config?.url?.startsWith('/auth/')) {
-      // Stale or invalid session — clear storage and redirect to login
+    if (status === 401 && !error.config?.url?.startsWith('/auth/')) {
+      // Session truly invalid — clear storage and redirect to login
       localStorage.removeItem('campus_auth');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
@@ -79,6 +79,8 @@ export const apiService = {
   editTicketComment:  (id, commentId, content) =>
     api.put(`/tickets/${id}/comments/${commentId}`, { content }),
   deleteTicketComment:(id, commentId)       => api.delete(`/tickets/${id}/comments/${commentId}`),
+  // POST fallback avoids CORS preflight issues with DELETE method on some environments.
+  deleteTicket:       (id)                  => api.post(`/tickets/${id}/delete`),
   uploadTicketAttachment: (id, file) => {
     const formData = new FormData();
     formData.append('file', file);

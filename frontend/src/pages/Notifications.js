@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth }    from '../contexts/AuthContext';
 import './Notifications.css';
@@ -26,11 +27,22 @@ const relativeTime = (dt) => {
 
 const Notifications = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
   const [message,  setMessage]  = useState('');
   const [filter,   setFilter]   = useState('all');
+
+  const extractTicketRef = (notification) => {
+    if (notification.referenceType === 'TICKET' && notification.referenceId) {
+      return notification.referenceId;
+    }
+    // Fallback for older notifications that only store #<shortTicketId> in message.
+    const msg = notification.message || '';
+    const match = msg.match(/#([A-Za-z0-9-]{6,36})/);
+    return match ? match[1] : null;
+  };
 
   const fetchNotifications = useCallback(async () => {
     if (!user?.userId) return;
@@ -50,10 +62,14 @@ const Notifications = () => {
   useEffect(() => { if (error)   { const t = setTimeout(() => setError(''),   6000); return () => clearTimeout(t); } }, [error]);
   useEffect(() => { if (message) { const t = setTimeout(() => setMessage(''), 3000); return () => clearTimeout(t); } }, [message]);
 
-  const handleMarkRead = async (id) => {
+  const handleMarkRead = async (notification) => {
     try {
-      await apiService.markNotificationRead(id);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, readStatus: true } : n));
+      if (!notification.readStatus) {
+        await apiService.markNotificationRead(notification.id);
+      }
+      setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, readStatus: true } : n));
+      // Keep user in notifications and show complete list after marking one as read.
+      setFilter('all');
     } catch (err) { setError(err.message); }
   };
 
@@ -70,6 +86,23 @@ const Notifications = () => {
       await apiService.deleteNotification(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) { setError(err.message); }
+  };
+
+  const handleOpenTicket = async (notification) => {
+    try {
+      if (!notification.readStatus) {
+        await apiService.markNotificationRead(notification.id);
+      }
+      const ref = extractTicketRef(notification);
+      if (ref) {
+        const param = ref.length > 8 ? `ticketId=${ref}` : `ticketRef=${ref}`;
+        navigate(`/tickets?${param}`);
+      } else {
+        navigate('/tickets');
+      }
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const handleClearAll = async () => {
@@ -165,13 +198,22 @@ const Notifications = () => {
 
                 {/* Actions */}
                 <div className="notif-actions">
+                  {n.referenceType === 'TICKET' && n.referenceId && (
+                    <button
+                      onClick={() => handleOpenTicket(n)}
+                      className="btn btn-primary btn-xs"
+                      title="Open ticket details"
+                    >
+                      Open Ticket
+                    </button>
+                  )}
                   {!n.readStatus && (
                     <button
-                      onClick={() => handleMarkRead(n.id)}
+                      onClick={() => handleMarkRead(n)}
                       className="btn btn-ghost btn-xs"
-                      title="Mark as read"
+                      title="Fix"
                     >
-                      ✓ Read
+                      ✅ Fix
                     </button>
                   )}
                   <button
