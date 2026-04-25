@@ -61,6 +61,7 @@ public class TicketService {
                 .resourceId(request.getResourceId())
                 .category(request.getCategory())
                 .description(request.getDescription())
+                .preferredContactDetails(request.getPreferredContactDetails())
                 .priority(request.getPriority())
                 .status(TicketStatus.OPEN)
                 .attachments(request.getAttachments() != null ? request.getAttachments() : new ArrayList<>())
@@ -280,6 +281,7 @@ public class TicketService {
         dto.setReporterId(ticket.getReporterId());
         dto.setCategory(ticket.getCategory());
         dto.setDescription(ticket.getDescription());
+        dto.setPreferredContactDetails(ticket.getPreferredContactDetails());
         dto.setPriority(ticket.getPriority());
         dto.setStatus(ticket.getStatus());
         dto.setAssignedTo(ticket.getAssignedTo());

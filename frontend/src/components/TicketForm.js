@@ -6,7 +6,7 @@ const TicketForm = ({ onSuccess }) => {
   const { user } = useAuth();
   const [resources, setResources] = useState([]);
   const [form, setForm] = useState({
-    category: '', priority: '', description: '', resourceId: '',
+    category: '', priority: '', description: '', resourceId: '', preferredContactDetails: '',
   });
   const [files,    setFiles]    = useState([]);
   const [errors,   setErrors]   = useState({});
@@ -55,6 +55,7 @@ const TicketForm = ({ onSuccess }) => {
         category:    form.category,
         priority:    form.priority,
         description: form.description,
+        preferredContactDetails: form.preferredContactDetails,
         ...(form.resourceId ? { resourceId: form.resourceId } : {}),
       });
 
@@ -64,7 +65,7 @@ const TicketForm = ({ onSuccess }) => {
         }
       }
 
-      setForm({ category: '', priority: '', description: '', resourceId: '' });
+      setForm({ category: '', priority: '', description: '', resourceId: '', preferredContactDetails: '' });
       setFiles([]); setErrors({});
       if (fileRef.current) fileRef.current.value = '';
       if (onSuccess) onSuccess();
@@ -136,6 +137,20 @@ const TicketForm = ({ onSuccess }) => {
           id="ticket-description"
         />
         {errors.description && <span className="validation-error">{errors.description}</span>}
+      </div>
+
+      {/* Preferred Contact Details */}
+      <div className="form-group">
+        <label className="form-label">Preferred Contact Details <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></label>
+        <input
+          type="text"
+          name="preferredContactDetails"
+          value={form.preferredContactDetails}
+          onChange={handleChange}
+          className="form-input"
+          placeholder="e.g., Phone number or alternative email"
+          id="ticket-contact-details"
+        />
       </div>
 
       {/* Attachments */}

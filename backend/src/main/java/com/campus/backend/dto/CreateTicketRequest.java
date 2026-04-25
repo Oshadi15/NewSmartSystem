@@ -23,6 +23,8 @@ public class CreateTicketRequest {
     @NotBlank(message = "Description is required")
     private String description;
 
+    private String preferredContactDetails;
+
     @NotNull(message = "Priority is required")
     private TicketPriority priority;
 

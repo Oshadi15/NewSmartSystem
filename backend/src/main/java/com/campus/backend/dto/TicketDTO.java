@@ -17,6 +17,7 @@ public class TicketDTO {
     private String reporterId;
     private String category;
     private String description;
+    private String preferredContactDetails;
     private TicketPriority priority;
     private TicketStatus status;
     private String assignedTo;

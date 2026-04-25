@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import './Sidebar.css';
 
 const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }) => {
   const { isAdmin, logout } = useAuth();
@@ -72,26 +73,11 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }) => {
         <div className="sidebar-footer">
           {/* Logout button */}
           <button
-            id="logout-btn"
+            className={`sidebar-logout${collapsed ? ' collapsed' : ''}`}
             onClick={handleLogout}
             title="Logout"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              width: '100%', padding: '9px 10px',
-              marginBottom: 6,
-              background: 'rgba(220,38,38,0.07)',
-              border: '1px solid rgba(220,38,38,0.18)',
-              borderRadius: 'var(--radius-md)',
-              color: '#DC2626', fontWeight: 600,
-              fontSize: '0.85rem', cursor: 'pointer',
-              transition: 'all 0.2s',
-              fontFamily: 'inherit',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background='rgba(220,38,38,0.15)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background='rgba(220,38,38,0.07)'; }}
           >
-            <span style={{ fontSize: 16, flexShrink: 0 }}>🚪</span>
+            <span className="sidebar-logout-icon">🚪</span>
             {!collapsed && <span>Logout</span>}
           </button>
 
