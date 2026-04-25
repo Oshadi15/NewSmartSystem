@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
+import './ResourceManager.css';
 
 const ResourceManager = () => {
   const [resources, setResources] = useState([]);

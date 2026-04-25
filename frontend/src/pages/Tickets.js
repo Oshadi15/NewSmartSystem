@@ -216,6 +216,11 @@ const Tickets = () => {
 
               {/* Body */}
               <p className="ticket-body">{ticket.description}</p>
+              {ticket.preferredContactDetails && (
+                <p className="ticket-contact-info" style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 8 }}>
+                  📞 <strong>Contact:</strong> {ticket.preferredContactDetails}
+                </p>
+              )}
 
               {/* Rejection reason */}
               {ticket.rejectionReason && (

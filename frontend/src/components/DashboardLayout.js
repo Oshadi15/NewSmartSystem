@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import Sidebar from '../pages/Sidebar';
 
-const DashboardLayout = ({ children }) => {
+const DashboardLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -25,7 +26,7 @@ const DashboardLayout = ({ children }) => {
             ☰
           </button>
         </header>
-        <main>{children}</main>
+        <main><Outlet /></main>
       </div>
     </div>
   );

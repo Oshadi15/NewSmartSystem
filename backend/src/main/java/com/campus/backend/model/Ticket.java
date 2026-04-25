@@ -25,6 +25,7 @@ public class Ticket {
     private String reporterId; // who raised it
     private String category;
     private String description;
+    private String preferredContactDetails;
     private TicketPriority priority;
     private TicketStatus status;
     private String assignedTo; // admin/tech id

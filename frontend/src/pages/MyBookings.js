@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/api';
 import { useAuth }    from '../contexts/AuthContext';
 import BookingList    from '../components/BookingList';
+import './MyBookings.css';
 
 const STATUS_COUNTS_META = [
   { key: 'PENDING',   label: 'Pending',   cls: 'badge-pending'  },
@@ -52,7 +53,7 @@ const MyBookings = () => {
   const filtered = statusFilter ? bookings.filter(b => b.status === statusFilter) : bookings;
 
   return (
-    <>
+    <div className="my-bookings-page">
       {/* Header */}
       <div className="page-header">
         <h1 className="page-title">📅 My Bookings</h1>
@@ -66,12 +67,12 @@ const MyBookings = () => {
 
       {/* Summary pills as filter toggles */}
       {bookings.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 22 }}>
+        <div className="booking-filters">
           <button
             className={`btn btn-sm ${!statusFilter ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => setStatusFilter('')}
           >
-            All <span style={{ opacity: 0.7, marginLeft: 4 }}>({bookings.length})</span>
+            All <span className="filter-count">({bookings.length})</span>
           </button>
           {STATUS_COUNTS_META.map(s => counts[s.key] ? (
             <button
@@ -80,7 +81,7 @@ const MyBookings = () => {
               onClick={() => setStatusFilter(statusFilter === s.key ? '' : s.key)}
             >
               <span className={`badge ${s.cls}`} style={{ pointerEvents: 'none' }}>{s.label}</span>
-              <span style={{ fontWeight: 700 }}>{counts[s.key]}</span>
+              <span className="filter-value">{counts[s.key]}</span>
             </button>
           ) : null)}
         </div>
@@ -105,7 +106,7 @@ const MyBookings = () => {
       ) : (
         <BookingList bookings={filtered} onCancel={handleCancel} showActions />
       )}
-    </>
+    </div>
   );
 };
 

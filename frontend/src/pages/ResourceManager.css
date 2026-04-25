@@ -1,0 +1,5 @@
+/* Page-specific styles for ResourceManager */
+.data-table td,
+.data-table th {
+  vertical-align: middle;
+}
