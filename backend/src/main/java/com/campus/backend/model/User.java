@@ -6,29 +6,38 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
+/**
+ * Represents an authenticated campus user.
+ * Created on first Google sign-in; role defaults to USER.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "resources")
-public class Resource {
+@Document(collection = "users")
+public class User {
+
     @Id
     private String id;
+
     private String name;
-    private ResourceType type;
-    private Integer capacity;
-    private String location;
-    private ResourceAvailability availability;
-    private ResourceStatus status;
+
+    /** Unique email from Google — used as the natural key for lookup. */
+    @Indexed(unique = true)
+    private String email;
+
+    /** Picture URL from Google profile (optional). */
+    private String picture;
+
+    @Builder.Default
+    private Role role = Role.USER;
 
     @CreatedDate
     private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
 }
+

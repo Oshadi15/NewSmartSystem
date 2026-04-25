@@ -1,46 +1,75 @@
-import './App.css';
-import Tickets from './pages/Tickets.js';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthProvider }        from './contexts/AuthContext';
 
-import Booking from './pages/Booking';
-import MyBookings from './pages/MyBookings';
+import DashboardLayout from './components/DashboardLayout';
+import ProtectedRoute  from './components/ProtectedRoute';
+
+import LoginPage      from './pages/LoginPage';
+import Home           from './pages/Home';
+import Resources      from './pages/Resources';
+import ResourceManager from './pages/ResourceManager';
+import Booking        from './pages/Booking';
+import MyBookings     from './pages/MyBookings';
+import AdminDashboard from './pages/AdminDashboard';
+import Tickets        from './pages/Tickets';
+import Notifications  from './pages/Notifications';
+
+import './App.css';
+
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
 function App() {
-  const isTicketsPage = window.location.pathname === '/tickets';
-  const isBookingPage = window.location.pathname === '/booking';
-  const isMyBookingsPage = window.location.pathname === '/mybookings';
-
-  if (isTicketsPage) {
-    return <Tickets />;
-  }
-
-   if (isBookingPage) {
-    return <Booking />;
-  }
-
-  if (isMyBookingsPage) {
-    return <MyBookings />;
-  }
-
   return (
-    <div className="App">
-      <header className="App-header">
-        <p>
-          Smart Campus frontend is running.
-        </p>
-        <a className="App-link" href="/tickets">
-          Open Tickets Page
-        </a>
-         <a className="App-link" href="/booking">
-          Open Booking Page
-        </a>
-        <br />
-        <a className="App-link" href="/mybookings">
-          Open My Bookings Page
-        </a>
-      </header>
-    </div>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Public: full-screen login */}
+            <Route path="/login" element={<LoginPage />} />
+
+            {/* All authenticated routes use the sidebar/navbar shell */}
+            <Route
+              path="/*"
+              element={
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="/" element={
+                      <ProtectedRoute><Home /></ProtectedRoute>
+                    } />
+                    <Route path="/resources" element={
+                      <ProtectedRoute><Resources /></ProtectedRoute>
+                    } />
+                    <Route path="/booking" element={
+                      <ProtectedRoute><Booking /></ProtectedRoute>
+                    } />
+                    <Route path="/my-bookings" element={
+                      <ProtectedRoute><MyBookings /></ProtectedRoute>
+                    } />
+                    <Route path="/tickets" element={
+                      <ProtectedRoute><Tickets /></ProtectedRoute>
+                    } />
+                    <Route path="/notifications" element={
+                      <ProtectedRoute><Notifications /></ProtectedRoute>
+                    } />
+                    {/* Admin-only */}
+                    <Route path="/admin" element={
+                      <ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>
+                    } />
+                    <Route path="/resources/manage" element={
+                      <ProtectedRoute requireAdmin><ResourceManager /></ProtectedRoute>
+                    } />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </DashboardLayout>
+              }
+            />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
-
 
 export default App;
