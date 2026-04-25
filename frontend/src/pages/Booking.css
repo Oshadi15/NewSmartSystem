@@ -16,6 +16,11 @@
   color: var(--text-primary);
 }
 
+.booking-page,
+.booking-page * {
+  box-sizing: border-box;
+}
+
 .booking-page .page-header {
   margin-bottom: 14px;
 }
@@ -94,6 +99,7 @@
   font-size: 0.9rem;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0;
 }
 
 .booking-page .form-input::placeholder {
@@ -123,6 +129,10 @@
   gap: 14px;
 }
 
+.booking-page .two-col > * {
+  min-width: 0;
+}
+
 .booking-page .btn {
   display: inline-flex;
   align-items: center;
@@ -133,6 +143,8 @@
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.12s ease, opacity 0.12s ease, background-color 0.12s ease;
+  line-height: 1.15;
+  flex-wrap: wrap;
 }
 
 .booking-page .btn:disabled {

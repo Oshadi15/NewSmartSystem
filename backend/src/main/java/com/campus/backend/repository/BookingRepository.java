@@ -30,5 +30,14 @@ public interface BookingRepository extends MongoRepository<Booking, String> {
            "$and: [ { 'startTime': { $lt: ?2 } }, { 'endTime': { $gt: ?1 } } ] }")
     List<Booking> findConflictingBookings(String resourceId, LocalDateTime startTime, LocalDateTime endTime);
 
+    /**
+     * Conflict detection excluding a specific booking id (useful during approval).
+     */
+    @Query("{ 'resourceId': ?0, " +
+           "'_id': { $ne: ?1 }, " +
+           "'status': { $nin: ['CANCELLED', 'REJECTED'] }, " +
+           "$and: [ { 'startTime': { $lt: ?3 } }, { 'endTime': { $gt: ?2 } } ] }")
+    List<Booking> findConflictingBookingsExcludingId(String resourceId, String excludeId, LocalDateTime startTime, LocalDateTime endTime);
+
     long countByStatus(BookingStatus status);
 }

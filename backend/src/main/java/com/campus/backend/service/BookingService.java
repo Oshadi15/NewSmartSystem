@@ -7,12 +7,17 @@ import com.campus.backend.exception.ResourceNotFoundException;
 import com.campus.backend.exception.ValidationException;
 import com.campus.backend.model.Booking;
 import com.campus.backend.model.BookingStatus;
+import com.campus.backend.model.Resource;
+import com.campus.backend.model.ResourceAvailability;
+import com.campus.backend.model.ResourceStatus;
 import com.campus.backend.repository.BookingRepository;
+import com.campus.backend.repository.ResourceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -21,6 +26,7 @@ import java.util.stream.Collectors;
 public class BookingService {
 
     private final BookingRepository bookingRepository;
+    private final ResourceRepository resourceRepository;
 
     public BookingDTO createBooking(CreateBookingRequest request) {
         log.info("Creating booking: userId={}, resourceId={}", request.getUserId(), request.getResourceId());
@@ -28,6 +34,21 @@ public class BookingService {
         if (!request.getStartTime().isBefore(request.getEndTime())) {
             throw new ValidationException("Start time must be before end time");
         }
+
+        Resource resource = resourceRepository.findById(request.getResourceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found with id: " + request.getResourceId()));
+
+        if (!ResourceStatus.ACTIVE.equals(resource.getStatus())) {
+            throw new ValidationException("This resource is not available for booking (status: " + resource.getStatus() + ").");
+        }
+
+        // Attendees: only validate against capacity when capacity exists (non-equipment)
+        if (resource.getCapacity() != null && request.getAttendees() != null && request.getAttendees() > resource.getCapacity()) {
+            throw new ValidationException("Attendees exceed resource capacity of " + resource.getCapacity() + ".");
+        }
+
+        // Availability window: enforce booking inside daily window when configured
+        validateWithinAvailability(resource.getAvailability(), request);
 
         List<Booking> conflicts = bookingRepository.findConflictingBookings(
                 request.getResourceId(),
@@ -52,7 +73,7 @@ public class BookingService {
         Booking saved = bookingRepository.save(booking);
         log.info("Booking created: id={}, status=PENDING", saved.getId());
 
-        return mapToDTO(saved, saved.getResourceId());
+        return mapToDTO(saved, resource.getName());
     }
 
     public List<BookingDTO> getUserBookings(String userId) {
@@ -89,6 +110,17 @@ public class BookingService {
             throw new ValidationException("Only PENDING bookings can be approved. Current status: " + booking.getStatus());
         }
 
+        // Safety: ensure no conflicts exist at approval-time (guards against data drift/manual edits).
+        List<Booking> conflicts = bookingRepository.findConflictingBookingsExcludingId(
+                booking.getResourceId(),
+                booking.getId(),
+                booking.getStartTime(),
+                booking.getEndTime()
+        );
+        if (!conflicts.isEmpty()) {
+            throw new ConflictException("Cannot approve: the resource has a conflicting booking in the same time range.");
+        }
+
         booking.setStatus(BookingStatus.APPROVED);
         Booking updated = bookingRepository.save(booking);
 
@@ -114,20 +146,22 @@ public class BookingService {
         return mapToDTOWithoutResourceService(updated);
     }
 
-    public BookingDTO cancelBooking(String id, String userId) {
-        log.info("Cancelling booking id={} by userId={}", id, userId);
+    public BookingDTO cancelBooking(String id, String userId, String userRole) {
+        log.info("Cancelling booking id={} by userId={} role={}", id, userId, userRole);
         Booking booking = fetchBooking(id);
 
-        if (!booking.getUserId().equals(userId)) {
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(Optional.ofNullable(userRole).orElse(""));
+        if (!isAdmin && !booking.getUserId().equals(userId)) {
             throw new ValidationException("You can only cancel your own bookings.");
         }
 
-        if (booking.getStatus() == BookingStatus.APPROVED || booking.getStatus() == BookingStatus.PENDING) {
+        // Spec: Approved bookings can later be CANCELLED.
+        if (booking.getStatus() == BookingStatus.APPROVED) {
             booking.setStatus(BookingStatus.CANCELLED);
             Booking updated = bookingRepository.save(booking);
             return mapToDTOWithoutResourceService(updated);
         } else {
-            throw new ValidationException("Only PENDING or APPROVED bookings can be cancelled. Current status: " + booking.getStatus());
+            throw new ValidationException("Only APPROVED bookings can be cancelled. Current status: " + booking.getStatus());
         }
     }
 
@@ -137,7 +171,10 @@ public class BookingService {
     }
 
     private BookingDTO mapToDTOWithoutResourceService(Booking booking) {
-        return mapToDTO(booking, booking.getResourceId());
+        String resourceName = resourceRepository.findById(booking.getResourceId())
+                .map(Resource::getName)
+                .orElse(booking.getResourceId());
+        return mapToDTO(booking, resourceName);
     }
 
     private BookingDTO mapToDTO(Booking booking, String resourceName) {
@@ -145,7 +182,7 @@ public class BookingService {
         dto.setId(booking.getId());
         dto.setUserId(booking.getUserId());
         dto.setResourceId(booking.getResourceId());
-        dto.setResourceName(resourceName); // temporary: use resourceId as name
+        dto.setResourceName(resourceName);
         dto.setStartTime(booking.getStartTime());
         dto.setEndTime(booking.getEndTime());
         dto.setPurpose(booking.getPurpose());
@@ -155,5 +192,23 @@ public class BookingService {
         dto.setCreatedAt(booking.getCreatedAt());
         dto.setUpdatedAt(booking.getUpdatedAt());
         return dto;
+    }
+
+    private void validateWithinAvailability(ResourceAvailability availability, CreateBookingRequest request) {
+        if (availability == null) return;
+        if (availability.getStartTime() == null || availability.getEndTime() == null) return;
+
+        // This system treats the availability window as a daily time window.
+        if (!request.getStartTime().toLocalDate().equals(request.getEndTime().toLocalDate())) {
+            throw new ValidationException("Bookings must start and end on the same day.");
+        }
+
+        if (request.getStartTime().toLocalTime().isBefore(availability.getStartTime())
+                || request.getEndTime().toLocalTime().isAfter(availability.getEndTime())) {
+            throw new ValidationException(
+                    "Booking time must be within resource availability (" +
+                            availability.getStartTime() + " - " + availability.getEndTime() + ")."
+            );
+        }
     }
 }

@@ -90,7 +90,7 @@ const BookingList = ({ bookings, onCancel, onApprove, onReject, showActions }) =
                         ✕ Reject
                       </button>
                     )}
-                    {onCancel && (b.status === 'PENDING' || b.status === 'APPROVED') && (
+                    {onCancel && b.status === 'APPROVED' && (
                       <button
                         className="btn btn-ghost btn-xs"
                         onClick={() => onCancel(b.id)}
