@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { apiService } from '../services/api';
 import { useAuth }    from '../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 const BookingForm = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [resources,        setResources]        = useState([]);
   const [selectedResource, setSelectedResource] = useState(null);
   const [form, setForm] = useState({
@@ -19,6 +21,22 @@ const BookingForm = () => {
       .then(res => setResources(res.data))
       .catch(() => {});
   }, []);
+
+  const preselectedResourceId = useMemo(() => {
+    const params = new URLSearchParams(location.search || '');
+    return params.get('resourceId') || '';
+  }, [location.search]);
+
+  useEffect(() => {
+    if (!preselectedResourceId) return;
+    if (!resources?.length) return;
+    const match = resources.find(r => r.id === preselectedResourceId);
+    if (!match) return;
+    setSelectedResource(match);
+    setForm((prev) => ({ ...prev, resourceId: preselectedResourceId }));
+    setErrors((prev) => ({ ...prev, resourceId: '' }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectedResourceId, resources]);
 
   const validate = () => {
     const e = {};
