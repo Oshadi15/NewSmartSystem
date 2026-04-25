@@ -12,6 +12,7 @@ import ResourceManager from './pages/ResourceManager';
 import Booking        from './pages/Booking';
 import MyBookings     from './pages/MyBookings';
 import AdminDashboard from './pages/AdminDashboard';
+import TechDashboard  from './pages/TechDashboard';
 import Tickets        from './pages/Tickets';
 import Notifications  from './pages/Notifications';
 
@@ -84,6 +85,15 @@ function App() {
               element={(
                 <ProtectedRoute requireAdmin>
                   <AdminDashboard />
+                </ProtectedRoute>
+              )}
+            />
+            {/* Technician dashboard */}
+            <Route
+              path="/tech"
+              element={(
+                <ProtectedRoute requireAdmin>
+                  <TechDashboard />
                 </ProtectedRoute>
               )}
             />

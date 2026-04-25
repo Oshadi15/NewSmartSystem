@@ -65,11 +65,19 @@ const Tickets = () => {
 
   // Initial/refresh data load.
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
-  // Open a specific ticket from query params (ticketId or short ticketRef).
+  // Open a specific ticket from query params (ticketId or short ticketRef), or open form if ?openForm=1.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const ticketId = params.get('ticketId');
+    const ticketId  = params.get('ticketId');
     const ticketRef = params.get('ticketRef');
+    const openForm  = params.get('openForm');
+
+    // Auto-open the New Ticket form when navigated from Home card
+    if (openForm === '1' && !isTechnician) {
+      setShowForm(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     if (ticketId) {
       setExpandedTicket(ticketId);
@@ -82,7 +90,7 @@ const Tickets = () => {
         setExpandedTicket(matched.id);
       }
     }
-  }, [location.search, tickets]);
+  }, [location.search, tickets, isTechnician]);
   // Smooth-scroll to expanded ticket card for better UX.
   useEffect(() => {
     if (!expandedTicket) return;
@@ -144,9 +152,9 @@ const Tickets = () => {
   };
   // Check if current user can delete a ticket.
   const canDeleteTicket = (ticket) => {
-    const isResolved = ticket.status === 'RESOLVED';
-    if (isAdmin) return isResolved;
-    return ticket.reporterId === user.userId && isResolved;
+    const isResolvedOrRejected = ['RESOLVED', 'REJECTED'].includes(ticket.status);
+    if (isAdmin) return isResolvedOrRejected;
+    return ticket.reporterId === user.userId && isResolvedOrRejected;
   };
   // Delete a ticket after user confirmation (allowed by backend role rules).
   const handleDeleteTicket = async (ticketId) => {

@@ -171,7 +171,7 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.deleteComment(id, commentId, requestUserId, userRole));
     }
 
-    /** USER can delete own resolved tickets; ADMIN can delete resolved tickets. */
+    /** USER can delete own resolved/rejected tickets; ADMIN can delete resolved/rejected tickets. */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTicket(
             @PathVariable String id,

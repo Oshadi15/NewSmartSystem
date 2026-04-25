@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import BookingList from '../components/BookingList';
@@ -38,6 +39,7 @@ const SkeletonRows = ({ n = 4 }) => (
 /* ── Admin Dashboard ───────────────────────────────────────── */
 const AdminDashboard = () => {
   const { user, isAdmin, isTechnician } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState('bookings');
   const [bookings, setBookings] = useState([]);
   const [tickets, setTickets] = useState([]);
@@ -135,15 +137,14 @@ const AdminDashboard = () => {
   const handleAssignTicket = async (id) => {
     clearAlerts();
     try {
-      // Assigns the currently logged-in user (admin) to this ticket.
       await apiService.assignTicket(id, user.userId);
-      setMessage('✅ Ticket assigned to you. The technician has been notified.');
+      setMessage('✅ Ticket assigned to you. Check your Tech Dashboard to start working on it.');
       fetchAll();
     }
     catch (err) { setError(err.message); }
   };
   const canAdminDeleteTicket = (ticket) =>
-    ticket.status === 'RESOLVED';
+    ['RESOLVED', 'REJECTED'].includes(ticket.status);
   const handleDeleteTicket = async (id) => {
     if (!window.confirm('Delete this ticket? This action cannot be undone.')) return;
     clearAlerts();
@@ -157,12 +158,12 @@ const AdminDashboard = () => {
   /* Clear all resolved/rejected tickets in one go (admin only) */
   const [clearing, setClearing] = useState(false);
   const handleClearAllTickets = async () => {
-    const deletable = tickets.filter(t => t.status === 'RESOLVED');
+    const deletable = tickets.filter(t => ['RESOLVED', 'REJECTED'].includes(t.status));
     if (deletable.length === 0) {
-      setMessage('ℹ️ No resolved tickets to clear.');
+      setMessage('ℹ️ No resolved or rejected tickets to clear.');
       return;
     }
-    if (!window.confirm(`Delete all ${deletable.length} RESOLVED ticket(s)? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete all ${deletable.length} resolved/rejected ticket(s)? This cannot be undone.`)) return;
     clearAlerts();
     setClearing(true);
     let deleted = 0;
@@ -226,7 +227,24 @@ const AdminDashboard = () => {
         <p className="page-subtitle">Manage bookings, tickets, and monitor system health</p>
       </div>
 
-      {message && <div className="alert alert-success">{message}</div>}
+      {message && (
+        <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <span>{message}</span>
+          {message.includes('Tech Dashboard') && (
+            <button
+              onClick={() => navigate('/tech')}
+              style={{
+                background: 'rgba(52,211,153,0.18)', border: '1px solid rgba(52,211,153,0.38)',
+                color: '#6ee7b7', borderRadius: 8, padding: '5px 12px',
+                fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap',
+              }}
+            >
+              🛠️ Tech Dashboard →
+            </button>
+          )}
+        </div>
+      )}
       {error && <div className="alert alert-error">{error}</div>}
 
       {/* ── Stats Grid ── */}

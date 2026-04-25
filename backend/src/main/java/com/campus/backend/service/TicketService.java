@@ -214,11 +214,12 @@ public class TicketService {
         boolean isAdmin = "ADMIN".equalsIgnoreCase(requestUserRole);
         boolean isReporter = requestUserId.equals(ticket.getReporterId());
 
-        boolean isResolved = ticket.getStatus() == TicketStatus.RESOLVED;
+        boolean isResolvedOrRejected = ticket.getStatus() == TicketStatus.RESOLVED
+                || ticket.getStatus() == TicketStatus.REJECTED;
 
         if (isAdmin) {
-            if (!isResolved) {
-                throw new ValidationException("Tickets can only be deleted after they are RESOLVED.");
+            if (!isResolvedOrRejected) {
+                throw new ValidationException("Tickets can only be deleted after they are RESOLVED or REJECTED.");
             }
             ticketRepository.delete(ticket);
             return;
@@ -227,8 +228,8 @@ public class TicketService {
         if (!isReporter) {
             throw new ValidationException("You can only delete your own tickets.");
         }
-        if (!isResolved) {
-            throw new ValidationException("You can only delete your tickets after they are RESOLVED.");
+        if (!isResolvedOrRejected) {
+            throw new ValidationException("You can only delete your tickets after they are RESOLVED or REJECTED.");
         }
         ticketRepository.delete(ticket);
     }

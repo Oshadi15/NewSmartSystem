@@ -26,7 +26,7 @@ const relativeTime = (dt) => {
 };
 
 const Notifications = () => {
-  const { user } = useAuth();
+  const { user, isTechnician } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -94,11 +94,17 @@ const Notifications = () => {
         await apiService.markNotificationRead(notification.id);
       }
       const ref = extractTicketRef(notification);
-      if (ref) {
-        const param = ref.length > 8 ? `ticketId=${ref}` : `ticketRef=${ref}`;
-        navigate(`/tickets?${param}`);
+      // Technicians go to their Tech Dashboard with the ticket auto-expanded.
+      // Regular users / admins go to the Tickets page.
+      if (isTechnician) {
+        navigate(ref ? `/tech?ticketId=${ref}` : '/tech');
       } else {
-        navigate('/tickets');
+        if (ref) {
+          const param = ref.length > 8 ? `ticketId=${ref}` : `ticketRef=${ref}`;
+          navigate(`/tickets?${param}`);
+        } else {
+          navigate('/tickets');
+        }
       }
     } catch (err) {
       setError(err.message);
