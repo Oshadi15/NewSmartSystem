@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { AuthProvider }        from './contexts/AuthContext';
 
 import DashboardLayout from './components/DashboardLayout';
 import ProtectedRoute  from './components/ProtectedRoute';
@@ -25,51 +24,84 @@ const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Public: full-screen login */}
-            <Route path="/login" element={<LoginPage />} />
+      <Router>
+        <Routes>
+          {/* Public: full-screen login */}
+          <Route path="/login" element={<LoginPage />} />
 
-            {/* All authenticated routes use the sidebar/navbar shell */}
+          {/* All authenticated routes use the sidebar/navbar shell */}
+          <Route element={<DashboardLayout />}>
             <Route
-              path="/*"
-              element={
-                <DashboardLayout>
-                  <Routes>
-                    <Route path="/" element={
-                      <ProtectedRoute><Home /></ProtectedRoute>
-                    } />
-                    <Route path="/resources" element={
-                      <ProtectedRoute><Resources /></ProtectedRoute>
-                    } />
-                    <Route path="/booking" element={
-                      <ProtectedRoute><Booking /></ProtectedRoute>
-                    } />
-                    <Route path="/my-bookings" element={
-                      <ProtectedRoute><MyBookings /></ProtectedRoute>
-                    } />
-                    <Route path="/tickets" element={
-                      <ProtectedRoute><Tickets /></ProtectedRoute>
-                    } />
-                    <Route path="/notifications" element={
-                      <ProtectedRoute><Notifications /></ProtectedRoute>
-                    } />
-                    {/* Admin-only */}
-                    <Route path="/admin" element={
-                      <ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>
-                    } />
-                    <Route path="/resources/manage" element={
-                      <ProtectedRoute requireAdmin><ResourceManager /></ProtectedRoute>
-                    } />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </DashboardLayout>
-              }
+              path="/"
+              element={(
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              )}
             />
-          </Routes>
-        </Router>
-      </AuthProvider>
+            <Route
+              path="/resources"
+              element={(
+                <ProtectedRoute>
+                  <Resources />
+                </ProtectedRoute>
+              )}
+            />
+            <Route
+              path="/booking"
+              element={(
+                <ProtectedRoute>
+                  <Booking />
+                </ProtectedRoute>
+              )}
+            />
+            <Route
+              path="/my-bookings"
+              element={(
+                <ProtectedRoute>
+                  <MyBookings />
+                </ProtectedRoute>
+              )}
+            />
+            <Route
+              path="/tickets"
+              element={(
+                <ProtectedRoute>
+                  <Tickets />
+                </ProtectedRoute>
+              )}
+            />
+            <Route
+              path="/notifications"
+              element={(
+                <ProtectedRoute>
+                  <Notifications />
+                </ProtectedRoute>
+              )}
+            />
+
+            {/* Admin-only */}
+            <Route
+              path="/admin"
+              element={(
+                <ProtectedRoute requireAdmin>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              )}
+            />
+            <Route
+              path="/resources/manage"
+              element={(
+                <ProtectedRoute requireAdmin>
+                  <ResourceManager />
+                </ProtectedRoute>
+              )}
+            />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
     </GoogleOAuthProvider>
   );
 }

@@ -1,8 +1,9 @@
 import React from 'react';
 import BookingForm from '../components/BookingForm';
+import './Booking.css';
 
 const Booking = () => (
-  <>
+  <div className="booking-page">
     {/* Page header */}
     <div className="page-header">
       <h1 className="page-title">📅 Book a Resource</h1>
@@ -13,10 +14,10 @@ const Booking = () => (
     </div>
 
     {/* Constrain form width for readability */}
-    <div style={{ maxWidth: 700 }}>
+    <div className="booking-form-wrap">
       <BookingForm />
     </div>
-  </>
+  </div>
 );
 
 export default Booking;

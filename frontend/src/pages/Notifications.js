@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/api';
 import { useAuth }    from '../contexts/AuthContext';
+import './Notifications.css';
 
 const TYPE_META = {
   BOOKING_APPROVED:      { icon: '✅', bg: 'rgba(0,184,148,0.15)',   label: 'Booking Approved' },
@@ -84,21 +85,21 @@ const Notifications = () => {
   const displayed   = filter === 'unread' ? notifications.filter(n => !n.readStatus) : notifications;
 
   return (
-    <>
+    <div className="notifications-page">
       {/* Header */}
-      <div className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <div className="page-header notifications-header">
         <div>
           <h1 className="page-title">
             🔔 Notifications
             {unreadCount > 0 && (
-              <span className="badge badge-rejected" style={{ marginLeft: 10, fontSize: '0.7rem', padding: '4px 10px' }}>
+              <span className="badge badge-rejected unread-badge">
                 {unreadCount} unread
               </span>
             )}
           </h1>
           <p className="page-subtitle">Stay updated on your bookings and ticket progress</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="notifications-actions">
           {unreadCount > 0 && (
             <button className="btn btn-ghost btn-sm" onClick={handleMarkAllRead} id="mark-all-read-btn">✓ Mark All Read</button>
           )}
@@ -112,7 +113,7 @@ const Notifications = () => {
       {error   && <div className="alert alert-error">{error}</div>}
 
       {/* Filter tabs */}
-      <div className="tabs" style={{ marginBottom: 22 }}>
+      <div className="tabs notifications-tabs">
         <button className={`tab${filter === 'all' ? ' active' : ''}`} onClick={() => setFilter('all')}>
           All <span className="tab-count">{notifications.length}</span>
         </button>
@@ -123,13 +124,13 @@ const Notifications = () => {
 
       {/* Notification list */}
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="notifications-loading-list">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} style={{ display: 'flex', gap: 14, padding: '16px 20px', background: 'var(--glass-bg)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border)' }}>
-              <div className="skeleton" style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div className="skeleton skel-text" style={{ width: '70%', marginBottom: 8 }} />
-                <div className="skeleton skel-text" style={{ width: '40%', height: 12 }} />
+            <div key={i} className="notif-skeleton-item">
+              <div className="skeleton notif-skeleton-icon" />
+              <div className="notif-skeleton-body">
+                <div className="skeleton skel-text notif-skeleton-line-lg" />
+                <div className="skeleton skel-text notif-skeleton-line-sm" />
               </div>
             </div>
           ))}
@@ -163,7 +164,7 @@ const Notifications = () => {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start', flexShrink: 0 }}>
+                <div className="notif-actions">
                   {!n.readStatus && (
                     <button
                       onClick={() => handleMarkRead(n.id)}
@@ -189,7 +190,7 @@ const Notifications = () => {
           })}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

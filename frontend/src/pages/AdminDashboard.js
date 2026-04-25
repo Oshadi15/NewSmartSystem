@@ -3,6 +3,7 @@ import { apiService } from '../services/api';
 import { useAuth }    from '../contexts/AuthContext';
 import BookingList    from '../components/BookingList';
 import StatusBadge    from '../components/StatusBadge';
+import './AdminDashboard.css';
 
 /* ── Helpers ───────────────────────────────────────────────── */
 const fmt = (dt) => dt ? new Date(dt).toLocaleString() : '—';
@@ -138,7 +139,7 @@ const AdminDashboard = () => {
   const filteredTickets  = statusFilter ? tickets.filter(t => t.status === statusFilter)  : tickets;
 
   return (
-    <>
+    <div className="admin-dashboard-page">
       {/* Page Header */}
       <div className="page-header">
         <h1 className="page-title">Admin Dashboard</h1>
@@ -380,7 +381,7 @@ const AdminDashboard = () => {
           )}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

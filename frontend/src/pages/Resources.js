@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
+import './Resources.css';
 
 const Resources = () => {
   const [resources, setResources] = useState([]);
@@ -21,7 +22,7 @@ const Resources = () => {
   }, []);
 
   return (
-    <>
+    <div className="resources-page">
       <div className="page-header">
         <h1 className="page-title">Resources</h1>
         <p className="page-subtitle">Browse campus resources and availability.</p>
@@ -29,7 +30,7 @@ const Resources = () => {
       {error && <div className="alert alert-error">{error}</div>}
       <div className="table-wrap">
         {loading ? (
-          <div style={{ padding: 16 }}>Loading resources...</div>
+          <div className="resources-loading">Loading resources...</div>
         ) : (
           <table className="data-table">
             <thead>
@@ -55,7 +56,7 @@ const Resources = () => {
           </table>
         )}
       </div>
-    </>
+    </div>
   );
 };
 

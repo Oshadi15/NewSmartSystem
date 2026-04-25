@@ -1,0 +1,43 @@
+/* Page-specific styles for Booking */
+.booking-page {
+  --text-primary: #e5e7eb;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --card-bg: linear-gradient(165deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.97));
+  --card-border: rgba(148, 163, 184, 0.2);
+  color: var(--text-primary);
+}
+
+.booking-page .page-header {
+  margin-bottom: 14px;
+}
+
+.booking-page .page-title {
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.booking-page .page-subtitle {
+  margin: 6px 0 0;
+  max-width: 780px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.booking-page .booking-form-wrap {
+  max-width: 700px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.28);
+}
+
+@media (max-width: 768px) {
+  .booking-page .booking-form-wrap {
+    padding: 12px;
+    border-radius: 12px;
+  }
+}
