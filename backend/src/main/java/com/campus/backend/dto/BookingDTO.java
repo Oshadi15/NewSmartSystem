@@ -10,7 +10,7 @@ public class BookingDTO {
     private String id;
     private String userId;
     private String resourceId;
-    /** Enriched resource name for display — avoids extra client-side lookup. */
+    // avoids extra client-side lookup.
     private String resourceName;
     private LocalDateTime startTime;
     private LocalDateTime endTime;

@@ -35,7 +35,7 @@ public class BookingController {
 
     private final BookingService bookingService;
 
-    /** USER or ADMIN can create a booking. */
+
     @PostMapping
     public ResponseEntity<BookingDTO> createBooking(
             @Valid @RequestBody CreateBookingRequest request,
@@ -46,7 +46,7 @@ public class BookingController {
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
-    /** Users may only view their own bookings. ADMIN can view any user's. */
+    
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<BookingDTO>> getUserBookings(
             @PathVariable String userId,
@@ -60,7 +60,7 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getUserBookings(userId));
     }
 
-    /** ADMIN only — view all bookings with optional filters. */
+    //admin can view all bookings, with optional filtering by status and resource
     @GetMapping
     public ResponseEntity<List<BookingDTO>> getAllBookings(
             @RequestParam(required = false) BookingStatus status,
@@ -73,7 +73,6 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getAllBookings(status, resourceId));
     }
 
-    /** ADMIN only — approve a PENDING booking. */
     @PutMapping("/{id}/approve")
     public ResponseEntity<BookingDTO> approveBooking(
             @PathVariable String id,
@@ -85,7 +84,7 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.approveBooking(id));
     }
 
-    /** ADMIN only — reject a PENDING booking with a reason. */
+   
     @PutMapping("/{id}/reject")
     public ResponseEntity<BookingDTO> rejectBooking(
             @PathVariable String id,
@@ -98,7 +97,7 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.rejectBooking(id, reason));
     }
 
-    /** USER — cancel their own booking. ADMIN can also cancel any booking. */
+    
     @PutMapping("/{id}/cancel")
     public ResponseEntity<BookingDTO> cancelBooking(
             @PathVariable String id,
