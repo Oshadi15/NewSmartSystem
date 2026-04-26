@@ -96,7 +96,7 @@ public class ResourceController {
         return ResponseEntity.ok(resourceService.getResource(id));
     }
 
-    // ── UPDATE ────────────────────────────────────────────────────────────────
+    // ── UPDATE resource ────────────────────────────────────────────────────────────────
 
     /**
      * Partially updates a resource (patch semantics). ADMIN only.
