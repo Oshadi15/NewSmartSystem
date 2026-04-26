@@ -80,6 +80,39 @@ public class TicketService {
     }
 
     /**
+     * Update an existing ticket.
+     * Only the original reporter can update the ticket, and only if it is OPEN and unassigned.
+     */
+    public TicketDTO updateTicket(String id, CreateTicketRequest request, String requestUserId) {
+        log.info("Updating ticket id={} by user={}", id, requestUserId);
+        Ticket ticket = fetchTicket(id);
+
+        if (!ticket.getReporterId().equals(requestUserId)) {
+            throw new ValidationException("You can only update your own tickets.");
+        }
+        if (ticket.getStatus() != TicketStatus.OPEN || ticket.getAssignedTo() != null) {
+            throw new ValidationException("You can only update tickets that are OPEN and not yet assigned.");
+        }
+
+        if (request.getAttachments() != null && request.getAttachments().size() > 3) {
+            throw new ValidationException("Maximum 3 attachments allowed per ticket.");
+        }
+
+        ticket.setResourceId(request.getResourceId());
+        ticket.setCategory(request.getCategory());
+        ticket.setDescription(request.getDescription());
+        ticket.setPreferredContactDetails(request.getPreferredContactDetails());
+        ticket.setPriority(request.getPriority());
+        if (request.getAttachments() != null) {
+            ticket.setAttachments(request.getAttachments());
+        }
+
+        Ticket saved = ticketRepository.save(ticket);
+        log.info("Ticket updated: id={}", saved.getId());
+        return mapToDTO(saved);
+    }
+
+    /**
      * Fetch all tickets, ordered newest first. Used by admin dashboards.
      */
     public List<TicketDTO> getAllTickets() {
@@ -245,7 +278,8 @@ public class TicketService {
         boolean isReporter = requestUserId.equals(ticket.getReporterId());
 
         boolean isResolvedOrRejected = ticket.getStatus() == TicketStatus.RESOLVED
-                || ticket.getStatus() == TicketStatus.REJECTED;
+                || ticket.getStatus() == TicketStatus.REJECTED
+                || ticket.getStatus() == TicketStatus.CLOSED;
 
         if (isAdmin) {
             if (!isResolvedOrRejected) {

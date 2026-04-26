@@ -24,6 +24,11 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiError> handleConflict(ConflictException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex, HttpServletRequest request) {
         return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());

@@ -30,6 +30,7 @@ const Tickets = () => {
   const [filterStatus,   setFilterStatus]   = useState('');
   const [searchText,     setSearchText]     = useState('');
   const [showForm,       setShowForm]       = useState(false);
+  const [editingTicket,  setEditingTicket]  = useState(null);
 
   const [rejectModal,  setRejectModal]  = useState({ open: false, ticketId: null, reason: '' });
   const [resolveModal, setResolveModal] = useState({ open: false, ticketId: null, notes: '' });
@@ -152,9 +153,9 @@ const Tickets = () => {
   };
   // Check if current user can delete a ticket.
   const canDeleteTicket = (ticket) => {
-    const isResolvedOrRejected = ['RESOLVED', 'REJECTED'].includes(ticket.status);
+    const isResolvedOrRejected = ['RESOLVED', 'REJECTED', 'CLOSED'].includes(ticket.status);
     if (isAdmin) return isResolvedOrRejected;
-    return ticket.reporterId === user.userId && isResolvedOrRejected;
+    return ticket.reporterId === user?.userId && isResolvedOrRejected;
   };
   // Delete a ticket after user confirmation (allowed by backend role rules).
   const handleDeleteTicket = async (ticketId) => {
@@ -256,6 +257,18 @@ const Tickets = () => {
               <button className="btn btn-primary" onClick={handleEditComment}>Save Changes</button>
               <button className="btn btn-ghost"   onClick={() => setEditingComment(null)}>Cancel</button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Edit / reopen ticket form */}
+      {editingTicket && (
+        <div className="modal-overlay" style={{ zIndex: 1000, overflowY: 'auto', padding: '20px' }}>
+          <div className="glass-card" style={{ maxWidth: 600, width: '100%', margin: 'auto', background: 'var(--bg-color)' }}>
+            <TicketForm 
+              initialData={editingTicket} 
+              onCancel={() => setEditingTicket(null)} 
+              onSuccess={() => { setSuccess('Ticket updated successfully!'); fetchTickets(); setEditingTicket(null); }} 
+            />
           </div>
         </div>
       )}
@@ -410,6 +423,12 @@ const Tickets = () => {
                     {canFixTicket(ticket) && (
                       <button className="btn btn-success btn-sm" onClick={() => setResolveModal({ open: true, ticketId: ticket.id, notes: '' })}>
                         ✅ Fix
+                      </button>
+                    )}
+
+                    {ticket.reporterId === user?.userId && ticket.status === 'OPEN' && !ticket.assignedTo && (
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditingTicket(ticket)}>
+                        ✏️ Edit
                       </button>
                     )}
 

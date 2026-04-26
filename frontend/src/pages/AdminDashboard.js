@@ -43,47 +43,42 @@ const AdminDashboard = () => {
   const [tab, setTab] = useState('bookings');
   const [bookings, setBookings] = useState([]);
   const [tickets, setTickets] = useState([]);
+  const [resources, setResources] = useState([]);
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [ticketSearch, setTicketSearch] = useState('');
+  const [resourceFilter, setResourceFilter] = useState('');
   const [rejectModal, setRejectModal] = useState({ open: false, id: null, type: '', reason: '' });
   const [userModal, setUserModal] = useState({ open: false, name: '', email: '', role: 'USER' });
+  const [ticketSearch, setTicketSearch] = useState('');
 
   const clearAlerts = () => { setError(''); setMessage(''); };
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      if (isTechnician && !isAdmin) {
-        const tickRes = await apiService.getAllTickets();
-        const allTickets = Array.isArray(tickRes.data) ? tickRes.data : [];
-        setTickets(allTickets.filter(t => t.assignedTo === user?.userId || t.reporterId === user?.userId));
-        setBookings([]);
-        setUsers([]);
-        setStats(null);
-      } else {
-        const [bookRes, tickRes, statsRes, userRes] = await Promise.all([
-          apiService.getAllBookings(),
-          apiService.getAllTickets(),
-          apiService.getAdminStats(),
-          apiService.getUsers(),
-        ]);
-        setBookings(bookRes.data);
-        setTickets(Array.isArray(tickRes.data) ? tickRes.data : []);
-        setStats(statsRes.data);
-        setUsers(userRes.data);
-      }
+      const [bookRes, tickRes, statsRes, userRes, resRes] = await Promise.all([
+        apiService.getAllBookings(),
+        apiService.getAllTickets(),
+        apiService.getAdminStats(),
+        apiService.getUsers(),
+        apiService.getResources(),
+      ]);
+      setBookings(bookRes.data || []);
+      setTickets(tickRes.data || []);
+      setStats(statsRes.data || null);
+      setUsers(userRes.data || []);
+      setResources(resRes.data || []);
       setError('');
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [isAdmin, isTechnician, user?.userId]);
+  }, [user?.userId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEffect(() => {
@@ -93,11 +88,39 @@ const AdminDashboard = () => {
   }, [isAdmin, isTechnician]);
   useEffect(() => { if (message) { const t = setTimeout(() => setMessage(''), 4000); return () => clearTimeout(t); } }, [message]);
 
-  /* ── Booking actions ── */
+  const fetchBookings = useCallback(async () => {
+    try {
+      const res = await apiService.getAllBookings(
+        statusFilter || undefined,
+        resourceFilter || undefined
+      );
+      setBookings(res.data || []);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [statusFilter, resourceFilter]);
+
+  useEffect(() => {
+    if (tab !== 'bookings') return;
+    fetchBookings();
+  }, [tab, fetchBookings]);
+
+  // Booking actions
   const handleApprove = async (id) => {
     clearAlerts();
     try { await apiService.approveBooking(id); setMessage('✅ Booking approved.'); fetchAll(); }
     catch (err) { setError(err.message); }
+  };
+  const handleCancelBooking = async (id) => {
+    if (!window.confirm('Cancel this APPROVED booking?')) return;
+    clearAlerts();
+    try {
+      await apiService.cancelBooking(id);
+      setMessage('✅ Booking cancelled.');
+      fetchAll();
+    } catch (err) {
+      setError(err.message);
+    }
   };
   const openRejectModal = (id, type = 'booking') =>
     setRejectModal({ open: true, id, type, reason: '' });
@@ -134,11 +157,11 @@ const AdminDashboard = () => {
     }
     catch (err) { setError(err.message); }
   };
-  const handleAssignTicket = async (id) => {
+  const handleAssignTicket = async (id, technicianId) => {
     clearAlerts();
     try {
-      await apiService.assignTicket(id, user.userId);
-      setMessage('✅ Ticket assigned to you. Check your Tech Dashboard to start working on it.');
+      await apiService.assignTicket(id, technicianId || user.userId);
+      setMessage('✅ Ticket assigned successfully. The technician will see it on their dashboard.');
       fetchAll();
     }
     catch (err) { setError(err.message); }
@@ -167,7 +190,7 @@ const AdminDashboard = () => {
     clearAlerts();
     setClearing(true);
     let deleted = 0;
-    let failed  = 0;
+    let failed = 0;
     for (const t of deletable) {
       try { await apiService.deleteTicket(t.id); deleted++; }
       catch { failed++; }
@@ -230,19 +253,6 @@ const AdminDashboard = () => {
       {message && (
         <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
           <span>{message}</span>
-          {message.includes('Tech Dashboard') && (
-            <button
-              onClick={() => navigate('/tech')}
-              style={{
-                background: 'rgba(52,211,153,0.18)', border: '1px solid rgba(52,211,153,0.38)',
-                color: '#6ee7b7', borderRadius: 8, padding: '5px 12px',
-                fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap',
-              }}
-            >
-              🛠️ Tech Dashboard →
-            </button>
-          )}
         </div>
       )}
       {error && <div className="alert alert-error">{error}</div>}
@@ -412,7 +422,13 @@ const AdminDashboard = () => {
       {loading ? (
         <div className="table-wrap"><SkeletonRows n={5} /></div>
       ) : tab === 'bookings' ? (
-        <BookingList bookings={filteredBookings} onApprove={handleApprove} onReject={(id) => openRejectModal(id, 'booking')} showActions />
+        <BookingList
+          bookings={filteredBookings}
+          onApprove={handleApprove}
+          onReject={(id) => openRejectModal(id, 'booking')}
+          onCancel={handleCancelBooking}
+          showActions
+        />
       ) : tab === 'tickets' ? (
         /* ── Ticket Table ── */
         <div className="table-wrap">
@@ -517,11 +533,21 @@ const AdminDashboard = () => {
                       {/* Actions */}
                       <td>
                         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
-                          {/* Assign Me */}
+                          {/* Assign Technician */}
                           {isAdmin && !ticket.assignedTo && ticket.status === 'OPEN' && (
-                            <button className="btn btn-primary btn-xs" onClick={() => handleAssignTicket(ticket.id)}>
-                              🔧 Assign Me
-                            </button>
+                            <select
+                              className="form-select"
+                              style={{ fontSize: '0.75rem', padding: '2px 6px', minWidth: '120px' }}
+                              onChange={(e) => {
+                                if (e.target.value) handleAssignTicket(ticket.id, e.target.value);
+                              }}
+                              value=""
+                            >
+                              <option value="">🔧 Assign Technician...</option>
+                              {users.filter(u => u.role === 'TECHNICIAN' || u.role === 'ADMIN').map(tech => (
+                                <option key={tech.id} value={tech.id}>{tech.name || tech.email} ({tech.role})</option>
+                              ))}
+                            </select>
                           )}
                           {/* In progress indicator */}
                           {ticket.assignedTo && ticket.status === 'IN_PROGRESS' && (

@@ -56,7 +56,7 @@ export const apiService = {
   setResourceStatus: (id, val)   => api.patch(`/resources/${id}/status`, null, { params: { value: val } }),
   deleteResource:    (id)        => api.delete(`/resources/${id}`),
 
-  // ── Bookings ───────────────────────────────────────────────────────────────
+  // ── Bookings ───────────────────────────────────
   createBooking:  (data)              => api.post('/bookings', data),
   getUserBookings:(userId)            => api.get(`/bookings/user/${userId}`),
   getAllBookings:  (status, resourceId)=> api.get('/bookings', { params: { ...(status && { status }), ...(resourceId && { resourceId }) } }),
@@ -66,6 +66,7 @@ export const apiService = {
 
   // ── Tickets ────────────────────────────────────────────────────────────────
   createTicket:       (data)               => api.post('/tickets', data),
+  updateTicket:       (id, data)           => api.put(`/tickets/${id}`, data),
   getUserTickets:     (userId)             => api.get(`/tickets/user/${userId}`),
   getAllTickets:       ()                   => api.get('/tickets'),
   getTicket:          (id)                  => api.get(`/tickets/${id}`),

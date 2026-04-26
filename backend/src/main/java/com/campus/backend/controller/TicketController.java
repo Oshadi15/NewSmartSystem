@@ -67,6 +67,20 @@ public class TicketController {
     }
 
     /**
+     * Update an existing ticket.
+     * The reporterId is verified in the service layer.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<TicketDTO> updateTicket(
+            @PathVariable String id,
+            @Valid @RequestBody CreateTicketRequest request,
+            @RequestHeader("X-User-Id") String requestUserId) {
+        request.setReporterId(requestUserId);
+        TicketDTO updated = ticketService.updateTicket(id, request, requestUserId);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
      * Return all tickets for admin and technicians.
      */
     @GetMapping

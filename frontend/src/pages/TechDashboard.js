@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '../services/api';
-import { useAuth }    from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
-import StatusBadge    from '../components/StatusBadge';
+import StatusBadge from '../components/StatusBadge';
 import './TechDashboard.css';
 
 const fmt = (dt) => dt ? new Date(dt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
 const PRIORITY_COLOR = {
   CRITICAL: { text: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)' },
-  HIGH:     { text: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.3)' },
-  MEDIUM:   { text: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.3)' },
-  LOW:      { text: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.3)' },
+  HIGH: { text: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.3)' },
+  MEDIUM: { text: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.3)' },
+  LOW: { text: '#34d399', bg: 'rgba(52,211,153,0.12)', border: 'rgba(52,211,153,0.3)' },
 };
 
 /* ── Small Stat ─────────────────────────────────────────────── */
@@ -24,15 +24,15 @@ const StatPill = ({ value, label, color }) => (
 
 /* ── TechDashboard ───────────────────────────────────────────── */
 const TechDashboard = () => {
-  const { user }   = useAuth();
-  const location   = useLocation();
-  const cardRefs   = useRef({});           // ticketId → DOM ref for scroll
-  const [tickets,      setTickets]      = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState('');
-  const [message,      setMessage]      = useState('');
-  const [expanded,     setExpanded]     = useState(null);   // ticket id
-  const [rejectId,     setRejectId]     = useState(null);
+  const { user } = useAuth();
+  const location = useLocation();
+  const cardRefs = useRef({});           // ticketId → DOM ref for scroll
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [expanded, setExpanded] = useState(null);   // ticket id
+  const [rejectId, setRejectId] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
 
   const fetchTickets = useCallback(async () => {
@@ -56,7 +56,7 @@ const TechDashboard = () => {
   // When tickets load, check URL for ?ticketId= and auto-expand + scroll to it
   useEffect(() => {
     if (loading || tickets.length === 0) return;
-    const params   = new URLSearchParams(location.search);
+    const params = new URLSearchParams(location.search);
     const targetId = params.get('ticketId');
     if (!targetId) return;
     // Find the ticket in the list (full id match)
@@ -69,7 +69,7 @@ const TechDashboard = () => {
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 120);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, tickets]);
 
   useEffect(() => { if (message) { const t = setTimeout(() => setMessage(''), 4000); return () => clearTimeout(t); } }, [message]);
@@ -93,9 +93,9 @@ const TechDashboard = () => {
     } catch (err) { setError(err.message); }
   };
 
-  const assignedOpen     = tickets.filter(t => t.status === 'IN_PROGRESS').length;
-  const resolvedByMe     = tickets.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
-  const totalAssigned    = tickets.length;
+  const assignedOpen = tickets.filter(t => t.status === 'IN_PROGRESS').length;
+  const resolvedByMe = tickets.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+  const totalAssigned = tickets.length;
 
   return (
     <div className="tech-dashboard-page">
@@ -115,19 +115,19 @@ const TechDashboard = () => {
 
       {/* ── Alerts ── */}
       {message && <div className="tech-alert tech-alert-success">{message}</div>}
-      {error   && <div className="tech-alert tech-alert-error">{error}</div>}
+      {error && <div className="tech-alert tech-alert-error">{error}</div>}
 
       {/* ── Stats ── */}
       <div className="tech-stats-row">
-        <StatPill value={totalAssigned}  label="Total Assigned"  color="#60a5fa" />
-        <StatPill value={assignedOpen}   label="In Progress"     color="#fbbf24" />
-        <StatPill value={resolvedByMe}   label="Resolved by Me"  color="#34d399" />
+        <StatPill value={totalAssigned} label="Total Assigned" color="#60a5fa" />
+        <StatPill value={assignedOpen} label="In Progress" color="#fbbf24" />
+        <StatPill value={resolvedByMe} label="Resolved by Me" color="#34d399" />
       </div>
 
       {/* ── Ticket Cards ── */}
       {loading ? (
         <div className="tech-skeleton-list">
-          {[1,2,3].map(i => (
+          {[1, 2, 3].map(i => (
             <div key={i} className="tech-skeleton-card">
               <div className="tech-skel-head">
                 <div className="skel tech-skel-title" />
@@ -147,9 +147,9 @@ const TechDashboard = () => {
       ) : (
         <div className="tech-ticket-list">
           {tickets.map(ticket => {
-            const pc        = PRIORITY_COLOR[ticket.priority] || PRIORITY_COLOR.LOW;
-            const isOpen    = expanded === ticket.id;
-            const isResolved= ticket.status === 'RESOLVED' || ticket.status === 'CLOSED';
+            const pc = PRIORITY_COLOR[ticket.priority] || PRIORITY_COLOR.LOW;
+            const isOpen = expanded === ticket.id;
+            const isResolved = ticket.status === 'RESOLVED' || ticket.status === 'CLOSED';
 
             return (
               <div

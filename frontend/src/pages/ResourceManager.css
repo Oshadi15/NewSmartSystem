@@ -1,5 +1,202 @@
-/* Page-specific styles for ResourceManager */
-.data-table td,
-.data-table th {
+/* Page-specific styles for ResourceManager in resources */
+.resource-manager-page {
+  color: #e5e7eb;
+}
+
+.resource-form {
+  background: linear-gradient(165deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.97));
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.resource-form-title {
+  font-size: 1.8rem;
+  margin: 0;
+  color: #f8fafc;
+}
+
+.resource-form-subtitle {
+  margin: 4px 0 14px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.resource-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.resource-manager-page .form-group {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resource-manager-page .form-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.resource-manager-page .input-help {
+  color: #94a3b8;
+  font-size: 0.74rem;
+}
+
+.resource-manager-page .form-input,
+.resource-manager-page .form-select {
+  width: 70%;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.65);
+  color: #e5e7eb;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+}
+
+.resource-manager-page .form-input:focus,
+.resource-manager-page .form-select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.resource-manager-page .form-select option {
+  color: #111827;
+}
+
+.time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-sep {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.resource-manager-page .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 14px;
+}
+
+.resource-manager-page .btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.resource-manager-page .btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.resource-manager-page .btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.resource-manager-page .btn-ghost {
+  background: transparent;
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #cbd5e1;
+}
+
+.resource-manager-page .btn-ghost:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.resource-manager-page .btn-warning {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.resource-manager-page .btn-warning:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.24);
+}
+
+.resource-manager-page .btn-danger {
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.resource-manager-page .btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.24);
+}
+
+.resource-manager-page .btn-success {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.resource-manager-page .btn-success:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.26);
+}
+
+.resource-manager-page .btn-xs {
+  padding: 5px 9px;
+  font-size: 0.74rem;
+}
+
+.resource-manager-page .table-wrap .btn {
+  margin-top: 0;
+}
+
+.resource-manager-page .alert {
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  font-size: 0.88rem;
+  border: 1px solid transparent;
+}
+
+.resource-manager-page .alert-success {
+  color: #064e3b;
+  background: #d1fae5;
+  border-color: #6ee7b7;
+}
+
+.resource-manager-page .alert-error {
+  color: #7f1d1d;
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.resource-manager-page .data-table td,
+.resource-manager-page .data-table th {
   vertical-align: middle;
+}
+
+.resource-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.resource-manager-page .form-input-sm,
+.resource-manager-page .form-select.form-input-sm {
+  padding: 7px 9px;
+  font-size: 0.8rem;
+}
+
+.inline-time-row .form-input {
+  min-width: 96px;
 }

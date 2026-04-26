@@ -3,11 +3,15 @@ import { apiService } from '../services/api';
 import { useAuth }    from '../contexts/AuthContext';
 import './TicketForm.css';
 
-const TicketForm = ({ onSuccess }) => {
+const TicketForm = ({ onSuccess, onCancel, initialData }) => {
   const { user } = useAuth();
   const [resources, setResources] = useState([]);
   const [form, setForm] = useState({
-    category: '', priority: '', description: '', resourceId: '', preferredContactDetails: '',
+    category: initialData?.category || '',
+    priority: initialData?.priority || '',
+    description: initialData?.description || '',
+    resourceId: initialData?.resourceId || '',
+    preferredContactDetails: initialData?.preferredContactDetails || '',
   });
   const [files,    setFiles]    = useState([]);
   const [errors,   setErrors]   = useState({});
@@ -73,18 +77,27 @@ const TicketForm = ({ onSuccess }) => {
     if (Object.keys(ve).length > 0) { setErrors(ve); return; }
     setLoading(true);
     try {
-      const res = await apiService.createTicket({
+      let newTicketId = null;
+      const payload = {
         reporterId:  user.userId,
         category:    form.category,
         priority:    form.priority,
         description: form.description,
         preferredContactDetails: form.preferredContactDetails,
         ...(form.resourceId ? { resourceId: form.resourceId } : {}),
-      });
+      };
 
-      if (files.length > 0 && res.data?.id) {
+      if (initialData?.id) {
+        await apiService.updateTicket(initialData.id, payload);
+        newTicketId = initialData.id;
+      } else {
+        const res = await apiService.createTicket(payload);
+        newTicketId = res.data?.id;
+      }
+
+      if (files.length > 0 && newTicketId) {
         for (const file of files) {
-          await apiService.uploadTicketAttachment(res.data.id, file);
+          await apiService.uploadTicketAttachment(newTicketId, file);
         }
       }
 
@@ -106,9 +119,14 @@ const TicketForm = ({ onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit} className="ticket-form">
-      <h3 className="ticket-form-title">
-        🎫 Submit New Ticket
-      </h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 className="ticket-form-title">
+          {initialData ? '✏️ Update Ticket' : '🎫 Submit New Ticket'}
+        </h3>
+        {onCancel && (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>✕ Cancel</button>
+        )}
+      </div>
 
       {apiError && <div className="alert alert-error">{apiError}</div>}
 
@@ -245,9 +263,9 @@ const TicketForm = ({ onSuccess }) => {
           {loading ? (
             <>
               <span className="spin ticket-submit-spin" />
-              Submitting…
+              {initialData ? 'Updating…' : 'Submitting…'}
             </>
-          ) : '📤 Submit Ticket'}
+          ) : (initialData ? '💾 Update Ticket' : '📤 Submit Ticket')}
         </button>
       </div>
     </form>

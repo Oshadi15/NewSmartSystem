@@ -5,9 +5,16 @@
   --text-muted: #94a3b8;
   --primary: #2563eb;
   --primary-light: #60a5fa;
+  --danger: #ef4444;
+  --success: #10b981;
   --border-soft: rgba(148, 163, 184, 0.2);
   --card-bg: linear-gradient(165deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
   color: var(--text-primary);
+}
+
+.my-bookings-page,
+.my-bookings-page * {
+  box-sizing: border-box;
 }
 
 .my-bookings-page .page-header {
@@ -60,6 +67,13 @@
   font-size: 0.82rem;
   font-weight: 700;
   transition: transform 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1.15;
+  flex-wrap: wrap;
+  white-space: normal;
 }
 
 .my-bookings-page .btn:hover {
@@ -83,6 +97,23 @@
   font-size: 0.76rem;
 }
 
+.my-bookings-page .btn-xs {
+  padding: 5px 9px;
+  font-size: 0.74rem;
+}
+
+.my-bookings-page .btn-success {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.my-bookings-page .btn-danger {
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
 .my-bookings-page .filter-count {
   opacity: 0.72;
   margin-left: 4px;
@@ -90,6 +121,13 @@
 
 .my-bookings-page .filter-value {
   font-weight: 700;
+  min-width: 18px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: var(--text-primary);
+  font-size: 0.74rem;
 }
 
 .my-bookings-page .badge {
@@ -99,40 +137,83 @@
   padding: 2px 8px;
   font-size: 0.7rem;
   font-weight: 700;
-  margin-right: 6px;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 .my-bookings-page .badge-pending {
-  color: #854d0e;
-  background: rgba(245, 158, 11, 0.22);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
 }
 
 .my-bookings-page .badge-approved {
-  color: #065f46;
-  background: rgba(16, 185, 129, 0.22);
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7 !important;
+  background: rgba(16, 185, 129, 0.16) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
 }
 
 .my-bookings-page .badge-rejected {
-  color: #7f1d1d;
-  background: rgba(239, 68, 68, 0.22);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5 !important;
+  background: rgba(239, 68, 68, 0.14) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
 }
 
 .my-bookings-page .badge-cancelled {
-  color: #334155;
-  background: rgba(148, 163, 184, 0.26);
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #e2e8f0 !important;
+  background: rgba(148, 163, 184, 0.14) !important;
+  border-color: rgba(148, 163, 184, 0.30) !important;
 }
 
 .my-bookings-page .table-wrap,
 .my-bookings-page .glass-card {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: var(--card-bg);
   border: 1px solid var(--border-soft);
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(2, 6, 23, 0.28);
+}
+
+.my-bookings-page .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 920px;
+}
+
+.my-bookings-page .data-table th,
+.my-bookings-page .data-table td {
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  text-align: left;
+  vertical-align: top;
+}
+
+.my-bookings-page .data-table th {
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 800;
+  background: rgba(15, 23, 42, 0.55);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.my-bookings-page .data-table tbody tr:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.my-bookings-page .data-table td {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.my-bookings-page .data-table td strong {
+  color: var(--text-primary);
 }
 
 .my-bookings-page .empty-state {
@@ -171,5 +252,14 @@
   }
   to {
     background-position: -200% 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .my-bookings-page .booking-filters {
+    margin-bottom: 14px;
+  }
+  .my-bookings-page .data-table {
+    min-width: 760px;
   }
 }

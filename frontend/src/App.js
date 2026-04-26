@@ -9,8 +9,10 @@ import LoginPage      from './pages/LoginPage';
 import Home           from './pages/Home';
 import Resources      from './pages/Resources';
 import ResourceManager from './pages/ResourceManager';
+//booking
 import Booking        from './pages/Booking';
 import MyBookings     from './pages/MyBookings';
+
 import AdminDashboard from './pages/AdminDashboard';
 import TechDashboard  from './pages/TechDashboard';
 import Tickets        from './pages/Tickets';
