@@ -10,7 +10,7 @@ import lombok.Data;
 
 /**
  * Request body for POST /api/resources (ADMIN only).
- *
+ *data ranfering
  * <p>Capacity is optional for EQUIPMENT type — the {@code @Min}
  * constraint only fires when a value IS provided.</p>
  */
