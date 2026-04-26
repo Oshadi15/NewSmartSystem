@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * Spring Data MongoDB repository for {@link Resource} entities.
- *
+ *communicate with database
  * <p>Complex multi-criteria queries involving combined filters (type + location +
  * capacity + status) are handled in {@link com.campus.hub.service.ResourceService}
  * via {@code MongoTemplate} for maximum flexibility.</p>
