@@ -27,6 +27,8 @@ const TicketForm = ({ onSuccess, onCancel, initialData }) => {
   }, []);
 
   // Validate the ticket form fields before submission.
+  // Ensures required fields are present, description length is sufficient,
+  // and optional phone contact is normalized to 10 digits.
   const validate = () => {
     const e = {};
     if (!form.category)           e.category    = 'Category is required.';

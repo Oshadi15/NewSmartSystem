@@ -23,24 +23,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * REST controller for the Ticket module.
- *
- * <h3>Role-Based Access</h3>
- * <ul>
- *   <li>POST   /api/tickets                    — USER &amp; ADMIN (create ticket)</li>
- *   <li>GET    /api/tickets                    — ADMIN only (all tickets)</li>
- *   <li>GET    /api/tickets/{id}               — USER (own ticket) or ADMIN</li>
- *   <li>GET    /api/tickets/user/{id}          — USER (own) or ADMIN</li>
- *   <li>PUT    /{id}/assign                    — ADMIN only</li>
- *   <li>PUT    /{id}/status                    — ADMIN only</li>
- *   <li>PUT    /{id}/resolve                   — ADMIN only (with resolution notes)</li>
- *   <li>POST   /{id}/comments                  — USER &amp; ADMIN</li>
- *   <li>PUT    /{id}/comments/{cId}            — comment owner only</li>
- *   <li>DELETE /{id}/comments/{cId}            — owner or ADMIN</li>
- *   <li>POST   /{id}/attachments               — ticket reporter only (multipart)</li>
- * </ul>
- */
+
 @Slf4j
 @RestController
 @RequestMapping("/api/tickets")
@@ -52,6 +35,31 @@ public class TicketController {
     // Upload directory inside the running directory
     private static final String UPLOAD_DIR = "uploads/tickets/";
 
+    /**
+     * Ticket API Endpoints (Role Summary)
+     *
+     * <pre>
+     * POST   /api/tickets                     — USER (creates own) / ADMIN
+     * PUT    /api/tickets/{id}                — USER (own) / ADMIN
+     *
+     * GET    /api/tickets                     — ADMIN / TECHNICIAN (all tickets)
+     * GET    /api/tickets/{id}                — USER (own) / ADMIN / TECHNICIAN
+     * GET    /api/tickets/user/{userId}       — USER (own) / ADMIN / TECHNICIAN
+     *
+     * PUT    /api/tickets/{id}/assign         — ADMIN only (assign to TECHNICIAN)
+     * PUT    /api/tickets/{id}/status         — ADMIN / TECHNICIAN
+     * PUT    /api/tickets/{id}/resolve        — ADMIN / TECHNICIAN
+     *
+     * POST   /api/tickets/{id}/comments       — any authenticated user
+     * PUT    /api/tickets/{id}/comments/{cId} — comment owner only
+     * DELETE /api/tickets/{id}/comments/{cId} — comment owner / ADMIN / TECHNICIAN
+     *
+     * DELETE /api/tickets/{id}                — USER (own previous: RESOLVED/CLOSED/REJECTED) / ADMIN
+     * POST   /api/tickets/{id}/delete         — same as DELETE (fallback for clients blocking DELETE)
+     *
+     * POST   /api/tickets/{id}/attachments    — ticket reporter only (multipart image upload, max 3)
+     * </pre>
+     */
     /**
      * Create a new ticket from the authenticated user.
      * The reporterId is forced to the authenticated user id.
@@ -102,6 +110,7 @@ public class TicketController {
             @RequestHeader(value = "X-User-Role", defaultValue = "USER") String userRole) {
         TicketDTO ticket = ticketService.getTicket(id);
         boolean isAdminOrTech = "ADMIN".equalsIgnoreCase(userRole) || "TECHNICIAN".equalsIgnoreCase(userRole);
+        // Only allow regular users to view their own tickets; admins and technicians can view any.
         if (!isAdminOrTech && !requestUserId.equals(ticket.getReporterId())) {
             throw new UnauthorizedException("You may only view your own tickets.");
         }
@@ -117,6 +126,7 @@ public class TicketController {
             @RequestHeader("X-User-Id") String requestUserId,
             @RequestHeader(value = "X-User-Role", defaultValue = "USER") String userRole) {
 
+        // Regular users may only fetch their own ticket list; admins and technicians can fetch by any user id.
         if (!"ADMIN".equalsIgnoreCase(userRole) && !"TECHNICIAN".equalsIgnoreCase(userRole) && !userId.equals(requestUserId)) {
             throw new UnauthorizedException("You may only view your own tickets.");
         }

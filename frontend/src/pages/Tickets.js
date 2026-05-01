@@ -6,6 +6,9 @@ import TicketForm     from '../components/TicketForm';
 import StatusBadge    from '../components/StatusBadge';
 import './Tickets.css';
 
+/* ── Tickets Page ───────────────────────────────────────────── */
+// Main ticket management page: fetches tickets, renders ticket cards,
+// handles status updates, ticket actions, comments, and ticket creation.
 /* ── Constants ─────────────────────────────────────────────── */
 const STATUS_TRANSITIONS = {
   OPEN:        ['IN_PROGRESS', 'REJECTED'],
@@ -170,6 +173,7 @@ const Tickets = () => {
     }
   };
 
+  // Filter tickets by selected status and search term.
   const filtered = tickets.filter(t => {
     const byStatus = !filterStatus || t.status === filterStatus;
     const q = searchText.trim().toLowerCase();

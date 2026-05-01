@@ -34,7 +34,10 @@ api.interceptors.response.use(
     }
 
     console.error(`API Error [${status}]:`, message);
-    return Promise.reject(new Error(message));
+    const err = new Error(message);
+    err.status = status;
+    err.url = error.config?.url;
+    return Promise.reject(err);
   }
 );
 
@@ -65,6 +68,7 @@ export const apiService = {
   cancelBooking:  (id)                => api.put(`/bookings/${id}/cancel`),
 
   // ── Tickets ────────────────────────────────────────────────────────────────
+  // Ticket endpoints used by the ticket dashboard, form, and comments UI.
   createTicket:       (data)               => api.post('/tickets', data),
   updateTicket:       (id, data)           => api.put(`/tickets/${id}`, data),
   getUserTickets:     (userId)             => api.get(`/tickets/user/${userId}`),
@@ -81,7 +85,18 @@ export const apiService = {
     api.put(`/tickets/${id}/comments/${commentId}`, { content }),
   deleteTicketComment:(id, commentId)       => api.delete(`/tickets/${id}/comments/${commentId}`),
   // POST fallback avoids CORS preflight issues with DELETE method on some environments.
-  deleteTicket:       (id)                  => api.post(`/tickets/${id}/delete`),
+  deleteTicket: async (id) => {
+    const safeId = encodeURIComponent(id);
+    try {
+      return await api.post(`/tickets/${safeId}/delete`);
+    } catch (err) {
+      // If backend doesn't have the POST fallback route yet, retry with DELETE.
+      if (err?.status === 404 || err?.status === 405) {
+        return await api.delete(`/tickets/${safeId}`);
+      }
+      throw err;
+    }
+  },
   uploadTicketAttachment: (id, file) => {
     const formData = new FormData();
     formData.append('file', file);
